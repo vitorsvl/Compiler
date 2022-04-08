@@ -33,5 +33,11 @@ Funcionamento:
   * Sentinel: para em um caractere
   * lookAhead: olha os próximos caracteres para identificar o token
   * Sempre salvando a linha e coluna
-* 
+
+
+
+## FONTE
+
+[https://github.com/Rabrg/jlex/blob/master/jlex/]
+
 
