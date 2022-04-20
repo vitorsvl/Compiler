@@ -16,7 +16,7 @@ class TypesRE():
     and it's regular expressions
     """
     # lista com os nomes dos tokens ordenados por prioridade
-    prior_tokens = ['INT','FLOAT','IF','ELSE','WHILE','TRUE','FALSE','OP','CP','OSB','CSB','OC','CC','DV','CM','COM','EQUAL','DIF','GT','LT','GTE','LTE','INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD','NUM','STR','ID']
+    prior_tokens = ['INT','FLOAT','IF','ELSE','WHILE','TRUE','FALSE','OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','COM','EQUAL','DIF','GT','LT','GTE','LTE','INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD','NUM','STR','ID']
     
     # Reserved words
     INT   = r'int'
@@ -48,21 +48,21 @@ class TypesRE():
     # Identifiers
     ID = r'\b[a-zA-Z]\w*|\b_\w*'
     # Separators (conferir os nomes !!!)
-    OP  = r'\(' 
-    CP  = r'\)'
-    OSB = r'\['
-    CSB = r'\]'
-    OC  = r'{'
-    CC  = r'}'
-    DV  = r';'
-    CM  = r','
+    OP  = r'\(' # open parentheses
+    CP  = r'\)' # close parentheses
+    OSB = r'\[' # open square brackets
+    CSB = r'\]' # close square brackets
+    OBR  = r'{' # open braces
+    CBR  = r'}' # close braces
+    SMC  = r';' # semicolon
+    CMM  = r',' # comma
     # Coments
     COM = r'//.*\n' # ???
 
     def __init__(self) -> None:
         pass
     
-    def get_token_type(token: str) -> str:
+    def get_token_type(self, token: str) -> str:
         print(token)
         if token not in TypesRE.prior_tokens:
             print('Invalid token')

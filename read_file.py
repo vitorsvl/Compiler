@@ -44,7 +44,7 @@ def verify_token(s: str, pos: Tuple) -> Token:
     return None
             
 
-    
+# TODO considerar ;  
 def identify_tokens(text: str) -> List:
     """
     Returns a list of the successfully identified tokens found in the  text
@@ -55,11 +55,11 @@ def identify_tokens(text: str) -> List:
 
     sentinel = 0 # pointer that starts at the begining of the text
     look_ahead = 0 # pointer to look ahead of sentinel
-    
+    LIMIT = 1
     while sentinel < len(text):
         print(sentinel)
-        print(f'at sentinel: {text[sentinel]}')
-        if text[sentinel] in NON_TOKENS:
+        print(f'at sentinel: {text[sentinel]} at lookAhead: {text[look_ahead]}')
+        if re.fullmatch(NON_TOKENS, text[sentinel]):
             print('entrou')
             sentinel += 1
             col_pos += 1
@@ -68,16 +68,19 @@ def identify_tokens(text: str) -> List:
                 line_pos += 1 # incrementa em 1 o index da linha 
         else:
             print('entrou else')
-            while text[look_ahead] not in NON_TOKENS:
+            while not re.fullmatch(NON_TOKENS, text[look_ahead]):
                 look_ahead += 1 # olhar adiante
+                print(f'lookahead ++')
             # tenho um possível token de [sentinel até look_ahead]
-            print(f'token: {text[sentinel:look_ahead+1]}')
-            t = verify_token(text[sentinel:look_ahead+1])
+            print(f'token: {text[sentinel:look_ahead]}')
+            t = verify_token(text[sentinel:look_ahead], (line_pos, col_pos))
             if t:
                 #adiciona na lista de tokens
                 tokens_list.append(t)
-                print(t)
-        # TODO testar essa função: retorna lista vazia
+                print(f'Token reconhecido: {t}')
+        look_ahead += 1
+        sentinel = look_ahead        
+        LIMIT += 1
     return tokens_list 
 
         
@@ -88,4 +91,19 @@ if __name__ == '__main__':
     print(t)
 
     tokens = identify_tokens('this is a int text; a + ')
-    print(tokens)
+    for tt in tokens:
+        print(tt)
+
+
+
+"""
+O ; finaliza uma sentença. Então:
+    Se exite um ; depois de um token, ou seja, um ; na posição look_ahead o token é o que está antes.
+    E depois tem que ter obrigatóriamente um NON_TOKEN, se não é erro.
+    TODO: repensar o nome NON_TOKEN para separadores
+    Eu tenho que retornar os separadores como tokens ? [espaço e \n]? ou só o ; ?
+
+
+    Quando achar um ; criar um token com oq está antes* e um com o ; # IMPLEMENTAR
+
+"""
