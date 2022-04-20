@@ -5,6 +5,9 @@ class Token():
         type: token type (reserved word, identifier, operator...)
         loc: location of the token in file (line, column)
     """
+    RegEx = {
+        ''
+    }
     def __init__(self, name, ttype, loc):
         self.name = name
         self.token_type = ttype
