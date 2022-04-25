@@ -1,11 +1,9 @@
-import re
+from re import finditer, fullmatch
 from typing import List, Tuple
 
 from Types import TypesRE
-
 from Token import Token
 
-NON_TOKENS = r'[ \t]+|\n'
 
 def read_file(path: str) -> str:
     """
@@ -15,13 +13,6 @@ def read_file(path: str) -> str:
         s = file.read()
         return s
 
-
-
-def verify_token_type(c: str) -> Tuple:
-    """
-    Verify the token type by the first character and returns the possible types
-    """
-    # interar sobre as expressões regulares de cada tipo ??
 
 def verify_token(s: str, pos: Tuple) -> Token:
     """
@@ -36,61 +27,57 @@ def verify_token(s: str, pos: Tuple) -> Token:
     types = TypesRE.prior_tokens
     for t in types:
         regex = getattr(TypesRE, t)
-        if re.fullmatch(regex, s): # se a expressão regular reconhece o token 
-            tokentype = TypesRE.get_token_type(t)
+        if fullmatch(regex, s): # se a expressão regular reconhece o token 
+            tokentype = TypesRE().get_token_type(t)
             return Token(s, tokentype, pos) # instancia e retorna o objeto Token
         
-    print(f'token {s} não reconhecido') # TODO criar uma exception pra isso
+    print(f'token >{s}< não reconhecido') # TODO criar uma exception pra isso
     return None
             
 
-# TODO considerar ;  
 def identify_tokens(text: str) -> List:
     """
-    Returns a list of the successfully identified tokens found in the  text
+    Return a list of the successfully identified tokens found in the input text
     """
-    tokens_list = []
-    line_pos = 0
-    col_pos = 0
+    tokens = []
+    lex_list = []
 
-    sentinel = 0 # pointer that starts at the begining of the text
-    look_ahead = 0 # pointer to look ahead of sentinel
-    LIMIT = 1
-    while sentinel < len(text):
-        print(sentinel)
-        print(f'at sentinel: {text[sentinel]} at lookAhead: {text[look_ahead]}')
-        if re.fullmatch(NON_TOKENS, text[sentinel]):
-            print('entrou')
-            sentinel += 1
-            col_pos += 1
-            if text[sentinel] == '\n': # quando quebra a linha
-                col_pos = 0 # index da coluna volta pra zero
-                line_pos += 1 # incrementa em 1 o index da linha 
-        else:
-            print('entrou else')
-            while not re.fullmatch(NON_TOKENS, text[look_ahead]):
-                look_ahead += 1 # olhar adiante
-                print(f'lookahead ++')
-            # tenho um possível token de [sentinel até look_ahead]
-            print(f'token: {text[sentinel:look_ahead]}')
-            t = verify_token(text[sentinel:look_ahead], (line_pos, col_pos))
-            if t:
-                #adiciona na lista de tokens
-                tokens_list.append(t)
-                print(f'Token reconhecido: {t}')
-        look_ahead += 1
-        sentinel = look_ahead        
-        LIMIT += 1
-    return tokens_list 
+    line = 1
+    col = 1
 
+    fullRegEx = TypesRE().all_types()
+    # usando o método finditer para encontrar no texto as ocorrências dos padrões definidos
+    lx = finditer(fullRegEx, text)
+    # agrupando os lexends e sua posição de inicio no texto em uma lista
+    for l in lx:
+        lex_list.append((l.group(), l.span()[0]))
+    
+    # indentificando os tokens
+    prev = ('', 0)
+    for lex in lex_list: # lex[0]: lexend, lex[1]: posição
         
+        if lex[0] == '\n':
+            col = 0
+            line += 1
 
-if __name__ == '__main__':        
-    t = verify_token('', (1, 2))
+        else:
+            print('else')
+            col += (lex[1] - prev[1]) 
 
-    print(t)
+            t = verify_token(lex[0], (line, col))
+            print('token:', t)
+            tokens.append(t)
+        prev = lex
 
-    tokens = identify_tokens('this is a int text; a + ')
+    return tokens
+
+
+if __name__ == '__main__':
+    # txt = 'this is a int text; a + b\nvariável; exp = 12 + 3; float b; a = [1, 2, 3]'
+    test = read_file('input.cp')
+    print(test)
+    tokens = identify_tokens(test)
+    print(tokens)
     for tt in tokens:
         print(tt)
 
@@ -106,4 +93,22 @@ O ; finaliza uma sentença. Então:
 
     Quando achar um ; criar um token com oq está antes* e um com o ; # IMPLEMENTAR
 
+
+    O que fazer quando não há non_tokens separando os tokens ????  a=23   [11,22,33]   b = 5;
+
+    Quando encontrar um non-token ou um separador:
+        O que está antes será verificado como token 
+        caso o 'break' encontrado seja um sep:
+            criar um token com este sep
+        caso contrário:
+            pass
+    TODO consertar a posição (line, col)
+
+
+    TEST 1: file=input
+
+    não anda com a coluna quando acha um sep
+    a coluna n volta pra 1 quando acha um \n
+
+    b++ não reconhecido !!! TODO
 """

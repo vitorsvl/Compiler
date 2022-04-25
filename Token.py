@@ -14,7 +14,8 @@ class Token():
         self.location = loc
     
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'{self.name} {self.token_type} {self.location}'
 
-    
+    def __len__(self) -> int:
+        return len(self.name)
