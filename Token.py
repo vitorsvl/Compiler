@@ -17,5 +17,11 @@ class Token():
     def __str__(self) -> str:
         return f'{self.name} {self.token_type} {self.location}'
 
+    def __repr__(self) -> str:
+        return f'{self.name} {self.token_type} {self.location[0]} {self.location[1]}'
+
     def __len__(self) -> int:
         return len(self.name)
+
+class Error(Token):
+    pass

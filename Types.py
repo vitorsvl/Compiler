@@ -6,16 +6,18 @@ class TypesRE():
     """
     # lista com os nomes dos tokens ordenados por prioridade
     prior_tokens = [
-        'INT','FLOAT','IF','ELSE','WHILE','TRUE','FALSE','PRINT',
+        'INT','FLOAT','CHAR','IF','ELSE','WHILE','TRUE','FALSE','PRINT',
         'OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','LB','COM',
         'EQUAL','DIF','GT','LT','GTE','LTE',
         'INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD',
-        'NUM','STR','ID'
+        'NUM','STR','ID', 'ILL', 'ILLN'
         ]
+    errors = ['ILL', 'ILLN']
     
     # Reserved words
     INT   = r'int'
     FLOAT = r'float'
+    CHAR = r'char'
     IF    = r'if'
     ELSE  = r'else'
     WHILE = r'while'
@@ -43,7 +45,6 @@ class TypesRE():
     STR = r'".*"|\'.*\''
     # Identifiers
     ID = r'\b[a-zA-Z]\w*|\b_\w*'
-    # Separators (conferir os nomes !!!)
     OP  = r'\(' # open parentheses
     CP  = r'\)' # close parentheses
     OSB = r'\[' # open square brackets
@@ -52,10 +53,12 @@ class TypesRE():
     CBR = r'}' # close braces
     SMC = r';' # semicolon
     CMM = r',' # comma
-    # Coments
+    # SPACE = r'\s+' # blank space
     LB = r'\n' # line break
-    COM = r'//.*\n' # ???
-
+    COM = r'//.*$\n' # comment
+    # unknown
+    ILL = r'\S' # (Ilegal) anything that was not recognized by the other expressions (but whitespace)
+    ILLN = r'^(?!_).+|^(?![a-zA-Z]).+' # Illegal name
     def __init__(self) -> None:
         pass
     
@@ -68,7 +71,7 @@ class TypesRE():
             print('Invalid token')
             return
         else:
-            if token in ['IF', 'ELSE', 'TRUE', 'FALSE', 'WHILE', 'FOR', 'INT', 'FLOAT', 'PRINT']:
+            if token in ['IF', 'ELSE', 'TRUE', 'FALSE', 'WHILE', 'FOR', 'INT', 'FLOAT','CHAR','PRINT']:
                 return 'ReservedWord'
             if token == 'ID':
                 return 'Identifier'
@@ -80,35 +83,12 @@ class TypesRE():
                 return 'LogicalOp'
             elif token == 'STR' or token == 'NUM':
                 return 'Literal'
+            elif token == 'ILL':
+                return 'IllegalChar'
+            elif token == 'ILLN':
+                return 'IllegalName'
+
 
 if __name__ == "__main__":
-    
-    import re
-    
-    at = TypesRE().all_types()
-    print(at)
     print()
-    test = 'int a = 5;\nprint("helloworld");'
-
-    l = test.split('\n')
-    ll = [a.split() for a in l]
-
-    print(ll)
-
-    i = re.finditer(at, ll[1][0])
-    for ii in i:
-        print(ii.group())
-        print(ii.span())
-
-    lexList = [l.group() for l in i]
-    print(lexList)
-
-    print('#####################################')
-    test = 'int a = 2;\nint b = 3;\n\nprint(a);\n\nc = [11, 22, 33];\n\nwhile (a < b) {\n    b++;\n}'
-    u = re.finditer(at, test)
-    lis = list()
-    for ii in u:
-        lis.append((ii.group(), ii.span()[0]))
-
-    print(lis)
    
