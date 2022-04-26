@@ -1,5 +1,7 @@
 from re import finditer, fullmatch
+from sys import argv
 from typing import List, Tuple
+from os.path import exists
 
 from rich.table import Table
 from rich.console import Console
@@ -138,6 +140,10 @@ def tokenize(path_to_file: str) -> None:
 
 
 if __name__ == '__main__':
-    path = 'input.cp'
 
-    tokenize(path)
+    path = argv[1]
+    print(path)
+    if exists(path):
+        tokenize(path)
+    else:
+        print(f'Arquivo {path} não encontrado')
