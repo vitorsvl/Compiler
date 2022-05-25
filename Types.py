@@ -59,6 +59,7 @@ class TypesRE():
     # unknown
     ILL = r'\S' # (Ilegal) anything that was not recognized by the other expressions (but whitespace)
     ILLN = r'^(?!_).+|^(?![a-zA-Z]).+' # Illegal name
+    
     def __init__(self) -> None:
         pass
     

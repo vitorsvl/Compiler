@@ -1,0 +1,183 @@
+############################  
+#  DEFINIÇÃO DA GRAMÁTICA  #   
+############################ 
+
+Conjunto de não terminais (V):
+
+V = {
+- BLOCK (bloco de código)  
+- ATRIBUITION (atribuição)
+- DECLARATION (declaração)
+- EXPRESSION (expressão)
+- CONDITION (condição)  
+- REPETITION (repetição)
+-- 
+
+}
+Conjunto de terminais (T):
+
+T = {
+        <id>,
+        <eqOp>,
+    }
+
+BLOCK := <obr> BLOCK_ <cbr>
+BLOCK_ := ATRIBUITION BLOCK
+    | EXP BLOCK
+    | DECLARATION BLOCK
+    | REPETITION BLOCK
+    | CONDITION BLOCK
+    | <empty>
+
+ATRIBUITION := <id> <eqOp> VAL
+VAL := <num> | <str> | <id>  # por enquanto atribuição não recebe expressão MAT (ex.: a = 1 + 2)
+
+DECLARATION := TYPE ATRIBUITION ; | TYPE <id> ;
+# refatorado
+DECLARATION := TYPE <id> DECLARATION_
+DECLARATION_ := ; 
+    | <eq> EXP; 
+    | <cmm> <id> DECLARATION_
+
+
+# expressões:
+EXPRESSION := ARTM_EXP
+    | LOGICAL_EXP
+
+ARTM_EXP := TERM ARTM_EXP_ 
+    | UNARY_EXP
+TERM := F TERM_
+F := <op> ARTM_EXP <cp> 
+    | <id>
+
+ARTM_EXP_ := <plus> TERM ARTM_EXP_ 
+    | <minus> TERM ARTM_EXP_
+    | <empty>
+
+TERM_ := <mul> F TERM_ 
+    | <div> F TERM_
+    | <mod> F TERM_ 
+    | <empty>
+    
+UNARY_EXP := <id> UNARY_OP ### é atribuição
+UNARY_OP := <inc> <dec>
+
+
+LOGICAL_EXP := TERM LOGICAL_OP TERM
+
+TERM := <true> 
+    | <false>
+    | VAL
+
+LOGICAL_OP := <equal> | <dif> | <gt> | <lt> | <gte> | <lte>
+
+CONDITION := <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
+CONDITION_ := <else> <obr> BLOCK <cbr> 
+    | <else> <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
+    | <empty>
+
+REPETITION := <for> <op> DECLARATION ; LOGICAL_EXP ; ATRIBUITION <cp> BLOCK
+    | <while> <ob> LOGICAL_EXP <cb> BLOCK
+
+#### NOTES ####
+
+VAL gera id ou num ou str
+
+
+
+#### GRAMÁTICA (formal) ####
+
+G = (V, T, P, BLOCK)
+V = {
+    BLOCK, BLOCK_, ATRIBUITION, EXPRESSION, DECLARATION, REPETITION, CONDITION, CONDITION_,
+    VAL, TYPE, TERM_, ARTM_EXP, ARTM_EXP_, LOGICAL_EXP, TERM, UNARY_EXP, UNARY_OP, SCALAR_ATR,
+    VECTOR_ATR, VSIZE, ELEM, CHAR_ELEM, NUM_ELEM
+}
+T = {
+    tokens
+}
+P = {
+
+    BLOCK := <obr> CODE_ <cbr>
+        | LINE_CODE 
+        
+    CODE := ATRIBUITION CODE
+        | EXPRESSION CODE
+        | DECLARATION CODE
+        | REPETITION CODE
+        | CONDITION CODE
+        | <eof>
+
+    CODE_ := ATRIBUITION CODE_
+        | EXPRESSION CODE_
+        | DECLARATION CODE_
+        | REPETITION CODE_
+        | CONDITION CODE_
+        | <empty>
+    
+    LINE_CODE := ATRIBUITION 
+        | EXPRESSION
+        | DECLARATION
+        | REPETITION
+        | CONDITION
+
+    ATRIBUITION := SCALAR_ATR | VECTOR_ATR 
+
+    SCALAR_ATR := <id> <eq> VAL
+    VAL := <num> | <str> | <id> 
+
+    VECTOR_ATR := <id> <osb> VSIZE <csb> <eq> <obr> ELEM <cbr>
+    VSIZE := <num> | <empty>
+    ELEM := NUM_ELEM | CHAR_ELEM
+    NUM_ELEM := <num> NUM_ELEM | <empty>
+    CHAR_ELEM := <char> CHAR_ELEM | <empty>
+
+    DECLARATION := TYPE ATRIBUITION
+    TYPE := <int> | <float> | <char>
+
+    EXPRESSION := ARTM_EXP
+        | LOGICAL_EXP
+
+    ARTM_EXP := TERM ARTM_EXP_ 
+        | UNARY_EXP
+
+    TERM := F TERM_
+    F := <op> ARTM_EXP <cp> 
+        | <id>
+
+    ARTM_EXP_ := <plus> TERM ARTM_EXP_ 
+        | <minus> TERM ARTM_EXP_
+        | <empty>
+
+    TERM_ := <mul> F TERM_ 
+        | <div> F TERM_
+        | <mod> F TERM_ 
+        | <empty>
+        
+    UNARY_EXP := <id> UNARY_OP
+    UNARY_OP := <inc> <dec>
+
+
+    LOGICAL_EXP := TERM LOGICAL_OP TERM
+
+    TERM := <true> 
+        | <false>
+        | VAL
+
+    LOGICAL_OP := <equal> | <dif> | <gt> | <lt> | <gte> | <lte>
+
+    CONDITION := <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
+    CONDITION_ := <else> <obr> BLOCK <cbr> 
+        | <else> <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
+        | <empty>
+
+    REPETITION := <for> <op> DECLARATION LOGICAL_EXP ARTM_EXP <cp> BLOCK
+        | <while> <ob> LOGICAL_EXP <cb> BLOCK
+
+}
+
+
+# TODO tratar abiguidade e outros problemas na gramática
+# calcular conjuntos First e Follow
+# montar tabela de transição
+# implementar funções e parser
