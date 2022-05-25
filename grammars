@@ -85,7 +85,7 @@ VAL gera id ou num ou str
 
 
 
-#### GRAMÁTICA (formal) ####
+#### GRAMÁTICA (versão inicial) ####
 
 G = (V, T, P, BLOCK)
 V = {
@@ -97,23 +97,20 @@ T = {
     tokens
 }
 P = {
-
-    BLOCK := <obr> CODE_ <cbr>
-        | LINE_CODE 
-        
+    
     CODE := ATRIBUITION CODE
         | EXPRESSION CODE
         | DECLARATION CODE
         | REPETITION CODE
         | CONDITION CODE
-        | <eof>
+        | EOF
 
     CODE_ := ATRIBUITION CODE_
         | EXPRESSION CODE_
         | DECLARATION CODE_
         | REPETITION CODE_
         | CONDITION CODE_
-        | <empty>
+        | empty
     
     LINE_CODE := ATRIBUITION 
         | EXPRESSION
@@ -121,63 +118,103 @@ P = {
         | REPETITION
         | CONDITION
 
+    BLOCK := { CODE_ }
+        | LINE_CODE 
+
     ATRIBUITION := SCALAR_ATR | VECTOR_ATR 
 
-    SCALAR_ATR := <id> <eq> VAL
-    VAL := <num> | <str> | <id> 
+    SCALAR_ATR := id = VAL
+    VAL := num | str | id 
 
-    VECTOR_ATR := <id> <osb> VSIZE <csb> <eq> <obr> ELEM <cbr>
-    VSIZE := <num> | <empty>
+    VECTOR_ATR := id [ VSIZE ] = { ELEM }
+    VSIZE := num | empty
     ELEM := NUM_ELEM | CHAR_ELEM
-    NUM_ELEM := <num> NUM_ELEM | <empty>
-    CHAR_ELEM := <char> CHAR_ELEM | <empty>
+    NUM_ELEM := num NUM_ELEM | empty
+    CHAR_ELEM := char CHAR_ELEM | empty
 
     DECLARATION := TYPE ATRIBUITION
-    TYPE := <int> | <float> | <char>
+    TYPE := int | float | char
 
     EXPRESSION := ARTM_EXP
         | LOGICAL_EXP
 
     ARTM_EXP := TERM ARTM_EXP_ 
-        | UNARY_EXP
 
     TERM := F TERM_
-    F := <op> ARTM_EXP <cp> 
-        | <id>
+    F := ( ARTM_EXP )
+        | id
 
-    ARTM_EXP_ := <plus> TERM ARTM_EXP_ 
-        | <minus> TERM ARTM_EXP_
-        | <empty>
+    ARTM_EXP_ := + TERM ARTM_EXP_ 
+        | - TERM ARTM_EXP_
+        | empty
 
-    TERM_ := <mul> F TERM_ 
-        | <div> F TERM_
-        | <mod> F TERM_ 
-        | <empty>
-        
-    UNARY_EXP := <id> UNARY_OP
-    UNARY_OP := <inc> <dec>
+    TERM_ := * F TERM_ 
+        | / F TERM_
+        | % F TERM_ 
+        | empty
 
 
     LOGICAL_EXP := TERM LOGICAL_OP TERM
 
-    TERM := <true> 
-        | <false>
-        | VAL
+    TERM := VAL | EXPRESSION
 
-    LOGICAL_OP := <equal> | <dif> | <gt> | <lt> | <gte> | <lte>
+    LOGICAL_OP := != | = | > | < | >= |<=
 
-    CONDITION := <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
-    CONDITION_ := <else> <obr> BLOCK <cbr> 
-        | <else> <if> <op> LOGICAL_EXP <cp> <obr> BLOCK <cbr> CONDITION_
+    CONDITION := if ( EXPRESSION ) BLOCK CONDITION_
+    CONDITION_ := else BLOCK
         | <empty>
 
-    REPETITION := <for> <op> DECLARATION LOGICAL_EXP ARTM_EXP <cp> BLOCK
-        | <while> <ob> LOGICAL_EXP <cb> BLOCK
+    REPETITION := for ( DECLARATION EXPRESSION ATRIBUITION ) BLOCK
+        | while ( EXPRESSION ) BLOCK
 
 }
 
-
-# TODO tratar abiguidade e outros problemas na gramática
 # calcular conjuntos First e Follow
+
+CODE := ATRIBUITION CODE
+        | EXPRESSION CODE
+        | DECLARATION CODE
+        | REPETITION CODE
+        | CONDITION CODE
+        | eof
+
+CODE_ := ATRIBUITION CODE_
+    | EXPRESSION CODE_
+    | DECLARATION CODE_
+    | REPETITION CODE_
+    | CONDITION CODE_
+    | empty
+
+LINE_CODE := ATRIBUITION 
+    | EXPRESSION
+    | DECLARATION
+    | REPETITION
+    | CONDITION
+
+BLOCK := { CODE_ }
+    | LINE_CODE
+
+First[BLOCK] = { '{'}     
+First[CODE] = {'eof'}
+First[CODE_] = {'empty'}
+First[LINE_CODE] = {}
+
+Follow[BLOCK] = {$}
+Follow[CODE] = {$}
+Follow[CODE_] = {$}
+Follow[LINE_CODE] = {$}
+
+ATRIBUITION := SCALAR_ATR | VECTOR_ATR 
+
+    SCALAR_ATR := id = VAL
+    VAL := num | str | id 
+
+    VECTOR_ATR := id [ VSIZE ] = { ELEM }
+    VSIZE := num | empty
+    ELEM := NUM_ELEM | CHAR_ELEM
+    NUM_ELEM := num NUM_ELEM | empty
+    CHAR_ELEM := char CHAR_ELEM | empty
+
 # montar tabela de transição
+
 # implementar funções e parser

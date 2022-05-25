@@ -40,7 +40,7 @@ def verify_token(s: str, pos: Tuple):
             else:
                 return Token(s, tokentype, pos) # instancia e retorna o objeto Token
         
-    print(f'token >{s}< não reconhecido') # TODO criar uma exception pra isso
+    print(f'token >{s}< não reconhecido') 
     return None
             
 
@@ -99,7 +99,7 @@ def generate_output(tokens: List, errors: List, file_name: str):
 
         Console().print(f'output generated at {file}', style='#12AA57')
     except:
-        print(f'output generated at {file}', style='#12AA57')
+        print(f'output generated at {file}')
 
 
 def print_token_table(tokens: List, errors: List) -> None:

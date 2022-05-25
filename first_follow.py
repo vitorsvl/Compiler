@@ -1,77 +1,56 @@
-### FUNCTIONS TO CALCULATE FIRST AND FOLLOW SETS ###
+V = ['CODE', 'ATRIBUITION', 'EXPRESSION', 'DECLARATION', 'REPETITION', 'CONDITION', 'CODE_', 
+    'LINE_CODE',, 'BLOCK', 'SCALAR_ATR', 'VECTOR_ATR', 'VAL', 'VSIZE', 'ELEM', 'NUM_ELEM', 
+    'CHAR_ELEM', 'TYPE', 'ARTM_EXP', 'LOGICAL_EXP', 'TERM', 'ARTM_EXP_', 'F' 'TERM_', 'LOGICAL_OP', 'CONDITION_']
 
-# GRAMMAR  (# == EPSILON == EMPTY STRING)
-from typing import Dict, List
+Terminals: ['eof', 'empty' ,'{' '}', 'id', '=', 'num', 'id', 'str' ,'[', ']', 'char', 'int', 'float', '(', '),', '+', '-', '*', '/', '%', '!=', '>', '<', '>=', '<=' ,'if' ,'else' 'for' 'while']
 
-
-
-# FIRST 
-def first(g: Dict) -> Dict:
-    """
-    Calculates the First set for the non-terminals of the given LL1 grammar
-    """
-    P = g['P']
-    T = g['T']
-    V = g['V']
-    First = {key: set() for key in V}
-    # print(P)
-    # print(T)
-    # print(First)
-
-    for nt in V:
-        for p in P.get(nt):
-            if p[0] in T: # se o primeiro elemento de alguma produção é terminal
-                First[nt].add(p[0])
-            else:
-                ntToCheck = []
-                for s in p: # para cada simbolo na produção
-                    if s not in T:
-                        ntToCheck.append(s)
-                    else: # encontrou um terminal
-                        # verifica se os não-terminais anteriores geram vazio
-                        allGenEmpty = True
-                        for ntt in ntToCheck:
-                            if ['#'] not in P.get(ntt):
-                                allGenEmpty = False
-                                break
-                    for ntt in ntToCheck:
-                        First[nt] = First[nt].union(First[ntt]) # A -> Bx : First(A) = First(A) U First(B)
-                        print(First[nt])
-                        print(First[ntt])
-                        if ['#'] not in P.get(ntt): # se B gera vazio, adiciona o prox não-terminal
-                            break 
-
-                        if allGenEmpty: # se todos os não-terminais anteriores ao terminal geram vazio
-                            First[nt].add(s) # adiciona o terminal no First do não-terminal atual
-                        
-    return First
-
-
-# FOLLOW
-def follow(g: Dict) -> List:
-    """
-    Calculates the Follow set for the non-terminals of the given LL1 grammar
-    """
-    pass
-
-if __name__ == '__main__':
-    
-    G = {
-        # non-terminals
-        'V': ['E', 'E_', 'T', 'T_', 'F'],
-        # terminals
-        'T': ['+', '*', '(', ')', '#', 'a'],
-        # productions
-        'P': {
-            'E': [['T', 'E_']],
-            'T': [['F', 'T_']],
-            'F': [['(', 'E', ')'], ['a']],
-            'E_': [['+', 'T', 'E_'], ['#']],
-            'T_': [['*', 'F', 'T_'], ['#']],
-        },
-        # start symbol
-        'S': 'E'
-    }
-    FIRST = first(G)
-    for f in FIRST:
-        print(f'First({f}) = {FIRST[f]}')
+FIRST[CODE] = eof empty id num ID STR char int float ( if for while
+FIRST[ATRIBUITION] = id
+FIRST[EXPRESSION] = id num ID STR (
+FIRST[DECLARATION] = char int float
+FIRST[REPETITION] = for while
+FIRST[CONDITION] = empty if
+FIRST[CODE_] = empty id num ID STR char int float ( if for while
+FIRST[LINE_CODE] = empty id num ID STR char int float ( if for while
+FIRST[BLOCK] = empty { id num ID STR char int float ( if for while
+FIRST[SCALAR_ATR] = id
+FIRST[VECTOR_ATR] = id
+FIRST[VAL] = num ID STR
+FIRST[VSIZE] = empty num
+FIRST[ELEM] = empty num char
+FIRST[NUM_ELEM] = empty num
+FIRST[CHAR_ELEM] = empty char
+FIRST[TYPE] = char int float
+FIRST[ARTM_EXP] = id num ID STR (
+FIRST[LOGICAL_EXP] = id num ID STR (
+FIRST[TERM] = id num ID STR (
+FIRST[ARTM_EXP_] = empty + -
+FIRST[F] = id (
+FIRST[TERM_] = empty * / %
+FIRST[LOGICAL_OP] = = != > < >= <=
+FIRST[CONDITION_] = else
+FOLLOW[CODE] =
+FOLLOW[ATRIBUITION] = eof empty id num ID STR char int float ( ) if else for while
+FOLLOW[EXPRESSION] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[DECLARATION] = eof empty id num ID STR char int float ( if else for while
+FOLLOW[REPETITION] = eof empty id num ID STR char int float ( if else for while
+FOLLOW[CONDITION] = eof empty id num ID STR char int float ( if else for while
+FOLLOW[CODE_] = }
+FOLLOW[LINE_CODE] = eof empty id num ID STR char int float ( if else for while
+FOLLOW[BLOCK] = eof empty id num ID STR char int float ( if else for while
+FOLLOW[SCALAR_ATR] = eof empty id num ID STR char int float ( ) if else for while
+FOLLOW[VECTOR_ATR] = eof empty id num ID STR char int float ( ) if else for while
+FOLLOW[VAL] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[VSIZE] = ]
+FOLLOW[ELEM] = }
+FOLLOW[NUM_ELEM] = }
+FOLLOW[CHAR_ELEM] = }
+FOLLOW[TYPE] = id
+FOLLOW[ARTM_EXP] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[LOGICAL_EXP] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[TERM] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[ARTM_EXP_] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[F] = empty * / %
+FOLLOW[TERM_] = eof empty id = num ID STR char int float ( ) + - != > < >= <= if else for while
+FOLLOW[LOGICAL_OP] = id num ID STR (
+FOLLOW[CONDITION_] = eof empty id num ID STR char int float ( if else for while 
