@@ -9,6 +9,7 @@ from rich.console import Console
 from Types import TypesRE
 from Token import Token, Error
 
+console = Console()
 
 def read_file(path: str) -> str:
     """
@@ -97,7 +98,7 @@ def generate_output(tokens: List, errors: List, file_name: str):
         out.writelines([(repr(e) + '\n') for e in errors])
     try:
 
-        Console().print(f'output generated at {file}', style='#12AA57')
+        console.print(f'output generated at {file}', style='#12AA57')
     except:
         print(f'output generated at {file}')
 
@@ -119,9 +120,9 @@ def print_token_table(tokens: List, errors: List) -> None:
     for e in errors:
         table_e.add_row(e.name, e.token_type, str(e.location[0]), str(e.location[1]))
     
-    Console().print(table_t)
+    console.print(table_t)
     print()
-    Console().print(table_e)
+    console.print(table_e)
 
 
 def tokenize(path_to_file: str) -> None:
@@ -130,13 +131,11 @@ def tokenize(path_to_file: str) -> None:
     """
     code = read_file(path_to_file)
     tokens, errors = identify_tokens(code)
-    # for tt in tokens:
-        # print(tt)
-    generate_output(tokens, errors, path_to_file)
-    try:
-        print_token_table(tokens, errors)
-    except:
-        print('Error building tables. Is rich installed in your system?')
+
+    # uncomment to generate a output file with identified tokens and errors    
+    # generate_output(tokens, errors, path_to_file)
+    
+    return tokens, errors
 
 
 if __name__ == '__main__':
@@ -144,6 +143,10 @@ if __name__ == '__main__':
     path = argv[1]
     print(path)
     if exists(path):
-        tokenize(path)
+        tokens, errors = tokenize(path) # returns a list of tokens
+        try:
+            print_token_table(tokens, errors)
+        except:
+            print('Error building tables. Please check if rich is installed')
     else:
         print(f'Arquivo {path} não encontrado')

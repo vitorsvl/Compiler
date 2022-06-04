@@ -13,7 +13,6 @@ class Token():
         self.token_type = ttype
         self.location = loc
     
-
     def __str__(self) -> str:
         return f'{self.name} {self.token_type} {self.location}'
 

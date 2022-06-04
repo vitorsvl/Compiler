@@ -6,7 +6,7 @@ class TypesRE():
     """
     # lista com os nomes dos tokens ordenados por prioridade
     prior_tokens = [
-        'INT','FLOAT','CHAR','IF','ELSE','WHILE','TRUE','FALSE','PRINT',
+        'INT','FLOAT','CHAR','IF','ELSE','WHILE', 'FOR','PRINT',
         'OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','LB','COM',
         'EQUAL','DIF','GT','LT','GTE','LTE',
         'INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD',
@@ -21,8 +21,7 @@ class TypesRE():
     IF    = r'if'
     ELSE  = r'else'
     WHILE = r'while'
-    TRUE  = r'True'
-    FALSE = r'False'
+    FOR = r'for'
     PRINT = r'print'
     # Logical Operators
     EQUAL = r'==' 
@@ -72,18 +71,22 @@ class TypesRE():
             print('Invalid token')
             return
         else:
-            if token in ['IF', 'ELSE', 'TRUE', 'FALSE', 'WHILE', 'FOR', 'INT', 'FLOAT','CHAR','PRINT']:
+            if token in ['IF', 'ELSE', 'WHILE', 'FOR', 'INT', 'FLOAT','CHAR','PRINT']:
                 return 'ReservedWord'
             if token == 'ID':
                 return 'Identifier'
             elif token in ['OP','CP','OSB','CSB','OBR','CBR','SMC','CMM']:
                 return 'Separator'
-            elif token in ['INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD']:
+            elif token == 'ATR':
+                return 'AtribuitionOp'
+            elif token in ['INC','DEC','PLUS','MINUS','MUL','DIV','MOD']:
                 return 'ArithmeticOp'
             elif token in ['EQUAL','DIF','GT','LT','GTE','LTE']:
                 return 'LogicalOp'
-            elif token == 'STR' or token == 'NUM':
-                return 'Literal'
+            elif token == 'STR': 
+                return 'String'
+            elif token == 'NUM':
+                return 'Number'
             elif token == 'ILL':
                 return 'IllegalChar'
             elif token == 'ILLN':
