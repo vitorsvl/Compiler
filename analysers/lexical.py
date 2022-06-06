@@ -23,7 +23,7 @@ def read_file(path: str) -> str:
 def verify_token(s: str, pos: Tuple):
     """
     Verify if the given string is a token, if yes the token will have it's type verified.  
-    Returns a Token object or None if it's not a token  
+    Returns a Token or Error object, or None if it's not a token or an error 
     
     Params:
         s - possible token
@@ -34,6 +34,7 @@ def verify_token(s: str, pos: Tuple):
     for t in types:
         regex = getattr(TypesRE, t)
         if fullmatch(regex, s): # se a expressão regular reconhece o token
+            
             tokentype = TypesRE().get_token_type(t)
 
             if t in TypesRE.errors:
@@ -48,7 +49,7 @@ def verify_token(s: str, pos: Tuple):
 def identify_tokens(text: str) -> Tuple:
     """
     Return a tuple containing a list of the successfully identified tokens found in the input text
-    and the possible errors
+    and a list of errors found
     """
     tokens = []
     errors = []
@@ -58,16 +59,33 @@ def identify_tokens(text: str) -> Tuple:
     col = 1
 
     fullRegEx = TypesRE().all_types()
+    print(fullRegEx)
     # usando o método finditer para encontrar no texto as ocorrências dos padrões definidos
     lx = finditer(fullRegEx, text)
     # agrupando os lexends e sua posição de inicio no texto em uma lista
+    isCom = False
     for l in lx:
+        if l.group() == '/*': # se achar um comentário
+            print('found comment')
+            isCom = True
+
+        if isCom:
+            if l.group() == '*/': 
+                isCom = False
+            continue
+        print(l.group())
         lex_list.append((l.group(), l.span()[0]))
-    
+
+            # while l.group != '*/':
+            #     break
+            # else: # executa apenas quando encontra o */  
+            #     if l.group != '*/':
+            #     print('not comment')
+            #     lex_list.append((l.group(), l.span()[0]))
+            
     # indentificando os tokens
     prev = ('', 0)
     for lex in lex_list: # lex[0]: lexend, lex[1]: posição
-        
         if lex[0] == '\n':
             col = 0
             line += 1
@@ -97,7 +115,6 @@ def generate_output(tokens: List, errors: List, file_name: str):
         out.write('\n')
         out.writelines([(repr(e) + '\n') for e in errors])
     try:
-
         console.print(f'output generated at {file}', style='#12AA57')
     except:
         print(f'output generated at {file}')

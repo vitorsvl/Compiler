@@ -2,8 +2,8 @@ class Token():
     """
     Class that represents a language token
         name: token name
-        type: token type (reserved word, identifier, operator...)
-        loc: location of the token in file (line, column)
+        token_type: token type (reserved word, identifier, operator...)
+        location: location of the token in file (line, column)
     """
     RegEx = {
         ''

@@ -6,11 +6,11 @@ class TypesRE():
     """
     # lista com os nomes dos tokens ordenados por prioridade
     prior_tokens = [
-        'INT','FLOAT','CHAR','IF','ELSE','WHILE', 'FOR','PRINT',
-        'OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','LB','COM',
-        'EQUAL','DIF','GT','LT','GTE','LTE',
-        'INC','DEC','ATR','PLUS','MINUS','MUL','DIV','MOD',
-        'NUM','STR','ID', 'ILL', 'ILLN'
+        'GTE','LTE','FLOAT','INT','CHAR','IF','ELSE','WHILE', 'FOR','PRINT',
+        'OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','LB',
+        'DIF','GT','LT','EQUAL','ATR','COM', 'CEND',
+        'INC','DEC','PLUS','MINUS','MUL','DIV','MOD',
+        'FLOATP','INTEGER','STR','ID', 'ILL', 'ILLN'
         ]
     errors = ['ILL', 'ILLN']
     
@@ -24,9 +24,9 @@ class TypesRE():
     FOR = r'for'
     PRINT = r'print'
     # Logical Operators
-    EQUAL = r'==' 
+    EQUAL = r'=='
     DIF   = r'!='
-    GT    = r'>' 
+    GT    = r'>'
     LT    = r'<'
     GTE   = r'>='
     LTE   = r'<='
@@ -40,7 +40,8 @@ class TypesRE():
     DIV   = r'/'
     MOD   = r'%'
     # Literals
-    NUM = r'\d+|\d+\.\d+' # FLOAT e INT
+    INTEGER = r'\d+' # integer
+    FLOATP = r'\d+\.\d+' # floating point number 
     STR = r'".*"|\'.*\''
     # Identifiers
     ID = r'\b[a-zA-Z]\w*|\b_\w*'
@@ -54,7 +55,8 @@ class TypesRE():
     CMM = r',' # comma
     # SPACE = r'\s+' # blank space
     LB = r'\n' # line break
-    COM = r'//.*$\n' # comment
+    COM = r'/\*' # start comment
+    CEND = r'\*/' # end comment 
     # unknown
     ILL = r'\S' # (Ilegal) anything that was not recognized by the other expressions (but whitespace)
     ILLN = r'^(?!_).+|^(?![a-zA-Z]).+' # Illegal name
@@ -77,15 +79,15 @@ class TypesRE():
                 return 'Identifier'
             elif token in ['OP','CP','OSB','CSB','OBR','CBR','SMC','CMM']:
                 return 'Separator'
-            elif token == 'ATR':
-                return 'AtribuitionOp'
             elif token in ['INC','DEC','PLUS','MINUS','MUL','DIV','MOD']:
                 return 'ArithmeticOp'
             elif token in ['EQUAL','DIF','GT','LT','GTE','LTE']:
                 return 'LogicalOp'
+            elif token == 'ATR':
+                return 'AtribuitionOp'
             elif token == 'STR': 
                 return 'String'
-            elif token == 'NUM':
+            elif token == 'INTEGER' or 'FLOATP':
                 return 'Number'
             elif token == 'ILL':
                 return 'IllegalChar'
