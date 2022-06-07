@@ -1,0 +1,21 @@
+int a;
+int b;
+a = 25;
+b = 'variavel';
+print("%d", a) /*erro nessa linha*/
+
+soma;
+soma = (b + 35) * 9;
+char s = "aaa";
+char ss = s + "bbb";
+
+if (a) {
+    print("%d", a);
+}
+
+int i;
+int z;
+for(i=0;i<12;i++) {
+    z = i + 9;
+    print("%d", z);
+}

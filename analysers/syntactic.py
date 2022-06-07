@@ -1,11 +1,22 @@
 from typing import List
-
+from rich.console import Console
 from Token import Token
 
+rc = Console()
+MAINCOLOR = '#85aaff i'
+SUCCESS = '#42ff88 b'
+
+class SyntacticError(Exception):
+    def __init__(self, line, customMessage='') -> None:
+        message = f"Syntax error at line {line}. " + customMessage
+        super().__init__(message)
 
 class MissingTokenError(Exception):
-    def __init__(self, token, line) -> None:
-        message = f"Syntax Error. Missing '{token}' at line {line}"
+    def __init__(self, token, line=None) -> None:
+        if not line:
+            message = f"Syntax Error. Missing '{token}'"
+        else:
+            message = f"Syntax Error. Missing '{token}' at line {line}"
         super().__init__(message)
 
 class InvalidSyntaxError(Exception):
@@ -29,7 +40,7 @@ class Parser():
     def parse(self) -> bool: # método geral, começa a partir dele
         if self._tokens:
             if self.Code():
-                print('Compiled with no errors')
+                rc.print('Compiled with no errors', style=SUCCESS)
         else:
             print('Nothing to compile')
 
@@ -73,22 +84,23 @@ class Parser():
     def Code(self, inLoop=False, inCond=False):
         while self._tokens:
             if self.match('id'):
-                print('entrou atr')
+                # print('entrou atr')
                 self.Atribuition()
 
             elif self.curr_token in ['int', 'float', 'char']:
-                print('entrou dcl')
+                # print('entrou dcl')
                 self.Declaration()
 
             elif self.curr_token in ['for', 'while']:
-                print('entrou rep')
+                # print('entrou rep')
                 self.Repetition()
 
             elif self.curr_token == 'if':
-                print('entrou cond')
+                # print('entrou cond')
                 self.Condition()
             
             elif self.curr_token == 'print':
+                # print('entrou print')
                 self.Print()
     
             else:
@@ -98,10 +110,11 @@ class Parser():
                     raise InvalidSyntaxError(self.curr_token_full)
                     # print('Error unexpectedd token:', self.curr_token)
                     # return False
-            self.Code(inLoop=inLoop)
+            self.Code(inLoop=inLoop, inCond=inCond)
         return True
     
     def Block(self, inLoop=False, inCond=False):
+        rc.print('Block', style=MAINCOLOR)
         if self.match('{'):
             self.consume()
             self.Code(inLoop=inLoop, inCond=inCond)
@@ -109,69 +122,63 @@ class Parser():
             if self.match('}'):
                 self.consume()
             else:
-                print(self.curr_token)
-                print('Error Block }', self.curr_token)
+                raise MissingTokenError('}')
         else:
-            print('Error Block {', self.curr_token)
+            raise MissingTokenError('{')
     
     def Print(self):
-        print('print')
-        self.consume()
+        rc.print('Print', style=MAINCOLOR)
+        lastToken = self.consume()
         if self.match('('):
-            self.consume()
+            lastToken = self.consume()
             self.Print_()
             if self.match(')'):
-                lastToken= self.consume()
+                lastToken = self.consume()
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
-                    raise MissingTokenError(';', lastToken.location[0])
-                    # print('Error - missing ";"')
+                    raise MissingTokenError(';', line=lastToken.location[0])
             else:
-                print('Error - missing ")"')
+                raise MissingTokenError(')', line=lastToken.location[0])
         else:
-            print('Error - expected "("')
+            raise MissingTokenError('(', line=lastToken.location[0])
     
     def Print_(self):
         if self.match('str'):
-            self.consume()
+            lastToken = self.consume()
             if self.match(','):
-                self.consume()
+                lastToken = self.consume()
                 if self.match('id'):
                     self.consume()
-                else:
-                    print('Error - expected id')
             else:
-                print('Error - missing token ","')
+                raise SyntacticError(lastToken.location[0], customMessage="Expected ','")
         else:
-            print('Error - print first argument must be string')
-
+            raise SyntacticError(lastToken.location[0], 'print first argument must be string')
 
     def Declaration(self):
-        print('declaration')
+        rc.print('Declaration', style=MAINCOLOR)
         self.Type()
         if self.match('id'):
-            self.consume()
+            lastToken = self.consume()
             self.Declaration_()
         else:
-            print('Error Declaration')
+            raise SyntacticError(lastToken.location[0], 'Expected <id>')
 
     def Declaration_(self):
         if self.match('='):
-            self.consume()
+            lastToken = self.consume()
             self.Val()
             if self.match(';'):
                 self.consume()
             else:
-                print('Error - missing ";"')
+                raise MissingTokenError(';', line=lastToken.location[0])
         else:
-            if not self.match(';'):
-                print(f'Error ', self._tokens[0])
-            else:
+            if self.match(';'):
                 self.consume()
+            else:
+                raise MissingTokenError(';', line=lastToken.location[0])
 
     def Type(self):
-        print('type')
         if self.match('int'):
             self.consume()
             return
@@ -181,11 +188,11 @@ class Parser():
         if self.match('float'):
             self.consume()
             return
-        print(f'Error type')
+        else:
+            raise SyntacticError(self.curr_token_full, customMessage=f'{self.curr_token} is not a valid type')
 
     def Atribuition(self, inForLoop=False):
-        print('atribuition')
-        # if self.match('id'): 
+        rc.print('Atribuition', style=MAINCOLOR) 
         lastToken = self.consume()
         if self.match('='): # atribuições do tipo a = 10
             lastToken = self.consume()
@@ -195,7 +202,7 @@ class Parser():
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
-                    raise MissingTokenError(';', lastToken.location[0]) 
+                    raise MissingTokenError(';', line=lastToken.location[0]) 
         
         elif self.match('++') or self.match('--'): # atribuições do tipo a++
             lastToken = self.consume()
@@ -203,14 +210,13 @@ class Parser():
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
-                    raise MissingTokenError(';', lastToken.location[0])      
+                    raise MissingTokenError(';', line=lastToken.location[0])      
         else:
             raise InvalidSyntaxError(lastToken)
         # else:
         #     print(f'Error atribuition id')
 
     def Val(self):
-        print('val')
         if self.match('num'):
             self.consume()
             return
@@ -220,7 +226,7 @@ class Parser():
         self.Expression()
 
     def Expression(self):
-        print('Expression')
+        rc.print('Expression', style=MAINCOLOR)
         self.Term()
         self.Expression_()
         
@@ -234,15 +240,17 @@ class Parser():
         elif self.match('str'): self.consume()
 
         elif self.match('('):
-            self.consume()
+            lastToken = self.consume()
             self.Expression()
             if self.match(')'):
-                self.consume()
+                lastToken = self.consume()
             else:
-                if self.curr_token == ')': return
-                print('Error - Missing ")"')
+                if self.curr_token == ')': 
+                    return
+                else:
+                    raise MissingTokenError(')', line=lastToken.location[0])
         else:
-            print('Error F ', self.curr_token)
+            raise SyntacticError(lastToken.location[0], customMessage=f'{lastToken.name} is not a valid operand for expression')
     
     def Term_(self):
         if any([self.match('*'), self.match('/'), self.match('%')]):
@@ -281,65 +289,64 @@ class Parser():
         # pode gerar vazio
     
     def Condition(self):
-        print('Condition')
-        self.consume()
+        rc.print('Condition', style=MAINCOLOR)
+        lastToken = self.consume()
         if self.match('('):
-            self.consume()
+            lastToken = self.consume()
             self.Expression()
-            print('after Expression')
             if self.match(')'):
                 self.consume()
                 self.Block(inCond=True)
                 self.Condition_()
             else:
-                print('Error - missing")"')
+                raise MissingTokenError(')', line=lastToken.location[0])
         else:
-            print('Error - expected "("')
+            raise MissingTokenError('(', line=lastToken.location[0])
 
     def Condition_(self):
         if self.match('else'):
+            self.consume()
             self.Block(inCond=True)
 
     def Repetition(self):
-        print('Repetition')
+        rc.print('Repetition', style=MAINCOLOR)
         if self.match('while'):
-            self.consume()
+            lastToken = self.consume()
             if self.match('('):
-                self.consume()
+                lastToken = self.consume()
                 self.Expression()
-                print('saiu de expression')
                 if self.match(')'):
                     self.consume()
                     self.Block(inLoop=True)
                 else:
-                    print('Error - missing "("')
+                    raise MissingTokenError(')', line=lastToken.location[0])
             else:
-                print('Error - expected ")"')
+                raise MissingTokenError(')', line=lastToken.location[0])
         
         elif self.match('for'):
-            self.consume()
+            lastToken = self.consume()
             if self.match('('):
-                self.consume()
+                lastToken = self.consume()
                 self.Atribuition(inForLoop=True) 
                 if self.match(';'):
-                    self.consume()
+                    lastToken = self.consume()
                     self.Expression()
                     if self.match(';'):
-                        self.consume()
+                        lastToken = self.consume()
                         self.Atribuition(inForLoop=True)
                         if self.match(')'):
                             self.consume()
                             self.Block(inLoop=True)
                         else: 
-                            print('Error - missing ")"')
+                            raise MissingTokenError(')', line=lastToken.location[0])
                     else:
-                        print('Error - missing ";"')    
+                        raise MissingTokenError(';', line=lastToken.location[0])
                 else:
-                    print('Error - missing ";"')
+                    raise MissingTokenError(';', line=lastToken.location[0])
             else:
-                print('Error - expected "("')
+                raise MissingTokenError('(', line=lastToken.location[0])
         else:
-            print('Error - Repetition error')
+            raise SyntacticError(self.curr_token_full.location[0], customMessage='Expected loop keyword')
 
     
 if __name__ == '__main__':

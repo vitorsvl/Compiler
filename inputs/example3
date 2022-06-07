@@ -1,0 +1,23 @@
+int a;
+int b;
+a = 12;
+b = a*2+5; /*um comentário*/
+
+if (a <= 23) {
+    if (b > a) {
+        a = a + b;
+    }
+    else {
+        b = b * b;
+    }
+}
+if (a > 23) {
+    if (b > a) {
+        a++;
+        b--;
+    }
+    else {
+        b++;
+        a--;
+    }
+}

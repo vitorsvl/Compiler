@@ -59,30 +59,20 @@ def identify_tokens(text: str) -> Tuple:
     col = 1
 
     fullRegEx = TypesRE().all_types()
-    print(fullRegEx)
     # usando o método finditer para encontrar no texto as ocorrências dos padrões definidos
     lx = finditer(fullRegEx, text)
     # agrupando os lexends e sua posição de inicio no texto em uma lista
     isCom = False
     for l in lx:
         if l.group() == '/*': # se achar um comentário
-            print('found comment')
             isCom = True
 
         if isCom:
             if l.group() == '*/': 
                 isCom = False
             continue
-        print(l.group())
         lex_list.append((l.group(), l.span()[0]))
 
-            # while l.group != '*/':
-            #     break
-            # else: # executa apenas quando encontra o */  
-            #     if l.group != '*/':
-            #     print('not comment')
-            #     lex_list.append((l.group(), l.span()[0]))
-            
     # indentificando os tokens
     prev = ('', 0)
     for lex in lex_list: # lex[0]: lexend, lex[1]: posição
