@@ -26,16 +26,8 @@ class InvalidSyntaxError(Exception):
 
 
 class Parser():
-    ct = 0 # current token position
     def __init__(self, tokens) -> None:
         self._tokens: List = tokens
-        # self._parsed: bool = self.parse(self._tokens)
-
-    def read_token(self) -> Token:
-        try:
-            return self._tokens[Parser.ct]
-        except IndexError:
-           return False 
         
     def parse(self) -> bool: # método geral, começa a partir dele
         if self._tokens:
@@ -48,8 +40,7 @@ class Parser():
         try:
             t = self._tokens[0]
         except IndexError:
-            return False
-            
+            return False   
         # print(self._tokens)
         if expected == 'id':
             if t.token_type == 'Identifier':
@@ -213,8 +204,6 @@ class Parser():
                     raise MissingTokenError(';', line=lastToken.location[0])      
         else:
             raise InvalidSyntaxError(lastToken)
-        # else:
-        #     print(f'Error atribuition id')
 
     def Val(self):
         if self.match('num'):

@@ -1,24 +1,29 @@
-## Compiler - Léxico
+## Compiler - Léxico e Sintático
 
-Implementação de um analizador léxico de um compilador desenvolvido para a disciplina de Compiladores do curso de Ciência da Computação da UFSJ
+Implementação dos analizadores léxico e sintático de um compilador desenvolvido para a disciplina de Compiladores do curso de Ciência da Computação da UFSJ
 
 ## Tecnologia utilizada
 
-O programa foi inteiramente desenvolvido utilizando a linguagem de programação Python. Nenhuma dependência externa foi utilizada para a implementação do léxico, apenas a biblioteca __rich__ para vizualização.
+O programa foi inteiramente desenvolvido utilizando a linguagem de programação Python. Nenhuma dependência externa foi utilizada para a implementação, apenas a biblioteca __rich__ para vizualização.
+
+## Linguagem
+A linguagem utilizada pelo compilador é uma espécie de miniC, contendo as principais estruturas da linguagem C e alguns elementos da linguagem python (exemplos de código podem ser encontrados na pasta __/inputs__)
 
 ## Input e output
-O arquivo de entrada (input) é passado por parâmetro via linha de comando e deve estar com a extensão __.cp__, referente a uma pseudolinguagem que une elementos de C e Python. A saída é na forma de arquivo, e será salva no diretório __outputs__ com o mesmo nome da entrada e extensão __.cplex__
+O arquivo de entrada contendo o código a ser analisado (input) é passado por parâmetro via linha de comando. A saída será mostrada no terminal, com os tokens identificados pelo analizador léxico e os passos da análise sintática, além dos possíveis erros encontrados.
 
-## Execução
+## Instruções de uso
 
+#### Instalando dependências
 * Instalando a biblioteca rich:
     `pip install rich`  
 
-* Rodando o programa:  
-    `python3 lexical.py nome_do_arquivo`
+#### Execução
+* Rodando o programa:
+    `python3 main.py nome_do_arquivo`
       
     ou  
-    `python lexical.py nome_do_arquivo`
+    `python main.py nome_do_arquivo`
 
 ## Licença
 
