@@ -1,11 +1,13 @@
 from typing import List
 from rich.console import Console
-from Token import Token
+from models.Token import Token
 
 rc = Console()
+# COLOR VARIABLES
 MAINCOLOR = '#85aaff i'
 SUCCESS = '#42ff88 b'
 
+# EXCEPTIONS 
 class SyntacticError(Exception):
     def __init__(self, line, customMessage='') -> None:
         message = f"Syntax error at line {line}. " + customMessage
@@ -150,8 +152,10 @@ class Parser():
         rc.print('Declaration', style=MAINCOLOR)
         self.Type()
         if self.match('id'):
-            lastToken = self.consume()
+            # verificar id na tabela
+            lastToken = self.consume() # o que eu consumo é o nome da variável
             self.Declaration_()
+            # variavel declarada, adicionar na tabela 
         else:
             raise SyntacticError(lastToken.location[0], 'Expected <id>')
 

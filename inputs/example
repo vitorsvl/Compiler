@@ -1,0 +1,7 @@
+int a = 5;
+int b = 4;
+int c = 3;
+
+int d = a*a + b*b + c*c;
+
+print(d)
