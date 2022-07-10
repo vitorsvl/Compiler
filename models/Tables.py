@@ -1,50 +1,81 @@
 # MODELS USED FOR SEMANTIC ANALYSIS
 
-class Vars():
+from typing import List
+
+class Var():
     """
     Info about declared variables
     """
-    # List containing the id of declared vars
-    declaredIds = []
-    # list containing declared variables (Var objects)
-    vTable = []
-    # init method gets var info and add the created var to table
     def __init__(self, varid, vartype, line, *v) -> None:
-        self._id: str = varid
+        self._name: str = varid
         self._type: str = vartype
         self._line: int = line
         if v:
             self._value = v[0]
         else:
             self._value = None
-        Vars.declaredIds.append(self._id) # add declared var to list
-        Vars.vTable.append(self) # add var to table
 
     @property
-    def get_type(self) -> str:
+    def typev(self) -> str:
         return self._type
     
     @property
-    def get_line(self) -> int:
+    def line(self) -> int:
         return self._line
     
     @property
-    def get_id(self) -> str:
-        return self._id
+    def name(self) -> str:
+        return self._name
 
+    def __str__(self):
+        return f'var {self._name} of type {self._type} at line {self._line} | Value: {self._value}'
+
+    def __repr__(self) -> str:
+        return f'<name:{self._name} type:{self._type} line:{self._line} value:{self._value}>'
+    
+
+class VarTable():
+    """
+    Class to store declared variables
+    """
+    def __init__(self) -> None:
+        self._table = list()
+    
+    def __str__(self) -> str:
+        t = ''
+        for var in self._table:
+            t = t + repr(var) + '\n'
+        return t
+
+    @property
+    def table(self) -> List:
+        return self._table
+    
+    def addVar(self, vname: str, vtype: str, vline: int, *vvalue):
+        if vvalue: 
+            value = vvalue[0]
+        else: 
+            value = None
+        var = Var(vname, vtype, vline, value)
+        self._table.append(var)
+
+    def isDeclared(self, name: str) -> Var:
+        for v in self._table:
+            if v.name == name:
+                return v
+            return    
 
     def show(self):
-        print(f'var {self._id} of type {self._type} at line {self._line} | Value: {self._value}')
+        if self._table:
+            print(self)
+        else: 
+            print('Não há variáveis declaradas')
+        
 
-    def show_table(self):
-        print('-----------------------')
-        for v in Vars.vTable:
-            v.show()
-        print('-----------------------')
+T = VarTable()
+T.show()
+T.addVar('a', 'int', 12, 125)
+T.addVar('b', 'str', 14, 'qweqwrf')
+T.addVar('c', 'int', 190)
 
-
-
-v = Vars('a', 'int', 12)
-u = Vars('b', 'int', 15)
-v.show_table()
-    
+T.show()

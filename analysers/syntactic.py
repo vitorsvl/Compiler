@@ -1,31 +1,20 @@
 from typing import List
 from rich.console import Console
+
 from models.Token import Token
+from models.Tables import VarTable
+from models.Exceptions import *
 
 rc = Console()
-# COLOR VARIABLES
+# COLOR VARIABLES #
 MAINCOLOR = '#85aaff i'
 SUCCESS = '#42ff88 b'
 
-# EXCEPTIONS 
-class SyntacticError(Exception):
-    def __init__(self, line, customMessage='') -> None:
-        message = f"Syntax error at line {line}. " + customMessage
-        super().__init__(message)
+# VARIABLE TABLE #
+VAR_TABLE = VarTable() # inicializando a tabela de variáveis
 
-class MissingTokenError(Exception):
-    def __init__(self, token, line=None) -> None:
-        if not line:
-            message = f"Syntax Error. Missing '{token}'"
-        else:
-            message = f"Syntax Error. Missing '{token}' at line {line}"
-        super().__init__(message)
-
-class InvalidSyntaxError(Exception):
-    def __init__(self, token) -> None:
-        message = f"Syntax Error. Unexpected token '{token.name}' at line {token.location[0]}\nInvalid syntax"
-        super().__init__(message)
-
+# WARNINGS #
+WARNING_QUEUE = []
 
 class Parser():
     def __init__(self, tokens) -> None:
@@ -152,8 +141,12 @@ class Parser():
         rc.print('Declaration', style=MAINCOLOR)
         self.Type()
         if self.match('id'):
-            # verificar id na tabela
-            lastToken = self.consume() # o que eu consumo é o nome da variável
+            lastToken = self.consume() 
+            v = VAR_TABLE.isDeclared(lastToken)
+            if v: # variável já declarada, criar warning
+                pass              
+
+                
             self.Declaration_()
             # variavel declarada, adicionar na tabela 
         else:
@@ -352,6 +345,3 @@ if __name__ == '__main__':
     p = Parser(tokens)
     p.parse()
     
-### TODO RESOLVER
-# ++ e -- pede um ; mas não quando aparece no for
-# terminar a parte dos erros
