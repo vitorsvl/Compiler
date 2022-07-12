@@ -1,9 +1,11 @@
 from typing import List
 from rich.console import Console
+from analysers.semantic import CodeGen, handle_casting
 
 from models.Token import Token
-from models.Tables import VarTable
+from models.Tables import TypeTable, VarTable
 from models.Exceptions import *
+from models.Warnings import *
 
 rc = Console()
 # COLOR VARIABLES #
@@ -13,35 +15,54 @@ SUCCESS = '#42ff88 b'
 # VARIABLE TABLE #
 VAR_TABLE = VarTable() # inicializando a tabela de variáveis
 
+# TYPE TABLE #
+TYPE_TABLE = TypeTable()
+
 # WARNINGS #
 WARNING_QUEUE = []
+
+# CODE GENERATION #
+CODE_GEN = CodeGen()
+expCache = [] # guarda os tipos do valores usados na expressão
 
 class Parser():
     def __init__(self, tokens) -> None:
         self._tokens: List = tokens
         
-    def parse(self) -> bool: # método geral, começa a partir dele
+    def parse(self, path_to_file: str) -> bool: # método geral, começa a partir dele
+        global path
+        path = path_to_file
         if self._tokens:
-            if self.Code():
+            if self.Code() and not WARNING_QUEUE:
                 rc.print('Compiled with no errors', style=SUCCESS)
+                
+            else:
+                for w in WARNING_QUEUE:
+                    w.show()
+            CODE_GEN.generate()
         else:
             print('Nothing to compile')
 
-    def match(self, expected) -> bool:
+    def match(self, expected, matchnext=False) -> bool:
         try:
-            t = self._tokens[0]
+            if matchnext:
+                t = self._tokens[1]
+            else:
+                t = self._tokens[0]
         except IndexError:
-            return False   
-        # print(self._tokens)
+            return False
+        
+        # print('curr token type:',t.token_type)
+        # print('curr token:',t.name)
         if expected == 'id':
             if t.token_type == 'Identifier':
                 return True
 
         elif expected == 'num':
-            if t.token_type == 'Number':
+            if t.token_type in ('IntNumber', 'FloatNumber'):
                 return True
 
-        elif expected == 'str':
+        elif expected == 'string': # string = value (literal)  str = type
             if t.token_type == 'String':
                 return True
         else:
@@ -69,7 +90,7 @@ class Parser():
                 # print('entrou atr')
                 self.Atribuition()
 
-            elif self.curr_token in ['int', 'float', 'char']:
+            elif self.curr_token in ['int', 'float', 'str']:
                 # print('entrou dcl')
                 self.Declaration()
 
@@ -113,7 +134,7 @@ class Parser():
         lastToken = self.consume()
         if self.match('('):
             lastToken = self.consume()
-            self.Print_()
+            self.Print_(lastToken)
             if self.match(')'):
                 lastToken = self.consume()
                 if self.match(';'):
@@ -125,8 +146,9 @@ class Parser():
         else:
             raise MissingTokenError('(', line=lastToken.location[0])
     
-    def Print_(self):
-        if self.match('str'):
+    def Print_(self, lt):
+        lastToken = lt
+        if self.match('string'):
             lastToken = self.consume()
             if self.match(','):
                 lastToken = self.consume()
@@ -138,92 +160,150 @@ class Parser():
             raise SyntacticError(lastToken.location[0], 'print first argument must be string')
 
     def Declaration(self):
+        VAR_TABLE.show()
         rc.print('Declaration', style=MAINCOLOR)
-        self.Type()
+        t = self.Type()
         if self.match('id'):
             lastToken = self.consume() 
-            v = VAR_TABLE.isDeclared(lastToken)
+            v = VAR_TABLE.isDeclared(lastToken.name)
             if v: # variável já declarada, criar warning
-                pass              
-
+                WARNING_QUEUE.append(RedeclarationWarning(v.name, lastToken.location[0], v.line, path)) # adiciona warning na fila
                 
-            self.Declaration_()
-            # variavel declarada, adicionar na tabela 
+            val = self.Declaration_()
+            # adicionar na tabela se esta não estiver declarada
+            if not v:
+                print('declara')
+                VAR_TABLE.addVar(lastToken.name, t, lastToken.location[0], vvalue=val)
+                v = VAR_TABLE.isDeclared(lastToken.name)
+            else:
+                pass # a variável redeclarada não substitui o valor da original
         else:
             raise SyntacticError(lastToken.location[0], 'Expected <id>')
+        # GENERATE CODE #
+        # tenho o tipo (t) tenho o id (v.name) e tenho o valor (val) (quando houver)
+        print('vname ', v.name)
+        CODE_GEN.declarationCode(v.name, t, value=val)
+        
 
     def Declaration_(self):
         if self.match('='):
             lastToken = self.consume()
-            self.Val()
+            val = self.Val()
+            
             if self.match(';'):
                 self.consume()
+                return val
             else:
                 raise MissingTokenError(';', line=lastToken.location[0])
         else:
             if self.match(';'):
                 self.consume()
+                return None
             else:
                 raise MissingTokenError(';', line=lastToken.location[0])
 
-    def Type(self):
+    def Type(self) -> str:
         if self.match('int'):
-            self.consume()
-            return
-        if self.match('char'):
-            self.consume()
-            return
+            t = self.consume()
+            return t.name
+        if self.match('str'):
+            t = self.consume()
+            return t.name
         if self.match('float'):
-            self.consume()
-            return
+            t = self.consume()
+            return t.name
         else:
             raise SyntacticError(self.curr_token_full, customMessage=f'{self.curr_token} is not a valid type')
 
     def Atribuition(self, inForLoop=False):
         rc.print('Atribuition', style=MAINCOLOR) 
         lastToken = self.consume()
+        v = VAR_TABLE.isDeclared(lastToken.name)
+        val = None;
+        if not v:
+            raise UndeclaredIdError(lastToken.name, lastToken.location[0])
+        
         if self.match('='): # atribuições do tipo a = 10
-            lastToken = self.consume()
-            self.Val()
-
+            self.consume()
+            val = self.Val()
             if not inForLoop: 
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
                     raise MissingTokenError(';', line=lastToken.location[0]) 
-        
+            isInc = False
         elif self.match('++') or self.match('--'): # atribuições do tipo a++
+            if v.typev != 'int':
+                raise IncompatibleTypeError(v.typev, '', lastToken.location[0], opr={self.curr_token})
+            isInc = True
             lastToken = self.consume()
             if not inForLoop: # exigir ; apenas quando não está dentro de um loop for
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
                     raise MissingTokenError(';', line=lastToken.location[0])      
+         
         else:
             raise InvalidSyntaxError(lastToken)
+        # CODE GENERATION
+        CODE_GEN.atribuitionCode(v.name, v.typev, value=val, inc=isInc)
+        
 
     def Val(self):
-        if self.match('num'):
-            self.consume()
-            return
-        if self.match('str'):
-            self.consume()
-            return
-        self.Expression()
+        # print('val com token', self.curr_token_full.token_type)
+        if self.match('num') and self.match(';', matchnext=True):
+            lt = self.consume()
+            return lt.name
+
+        if self.match('string') and self.match(';', matchnext=True):
+            # print('entrou match str')
+            lt = self.consume()
+            return lt.name     
+        self.Expression() 
 
     def Expression(self):
         rc.print('Expression', style=MAINCOLOR)
         self.Term()
         self.Expression_()
-        
+      
     def Term(self):
-        self.F()
+        t = self.F()
+        # Verificar se há variáveis na fila expCache, 
+        if t.token_type == 'Identifier':
+            varType = VAR_TABLE.getVarType(t.name)
+        else:
+            if t.token_type == "IntNumber":
+                varType = 'int'
+            elif t.token_type == "FloatNumber":
+                varType = 'float'
+            elif t.token_type == "String":
+                varType = 'str' 
+        expCache.append((t.name, varType)) # adiciona o nome(valor) e o tipo da variável lida em F no final do cache da expressão
+        if len(expCache) >= 2:
+            typeCheck = TYPE_TABLE.check(expCache[0][1], expCache[1][1])
+            if typeCheck == 1: # OK
+                expCache.pop() 
+            elif typeCheck == 2: # CAST 
+                print('casting')
+                handle_casting(varType, t) # ??????
+                
+            else: # == 3 # ERROR
+                raise IncompatibleTypeError(expCache[0][1], expCache[1][1], t.location[0])
         self.Term_()
 
     def F(self):
-        if self.match('id'): self.consume()
-        elif self.match('num'): self.consume()
-        elif self.match('str'): self.consume()
+        
+        if self.match('id'): 
+            lt = self.consume()
+            return lt # F retorna o token da direita para Term ou Term_ (atribuição)
+            
+        elif self.match('num'): 
+            lt = self.consume()
+            return lt
+
+        elif self.match('string'): 
+            lt = self.consume()
+            return lt
 
         elif self.match('('):
             lastToken = self.consume()
@@ -235,14 +315,15 @@ class Parser():
                     return
                 else:
                     raise MissingTokenError(')', line=lastToken.location[0])
+            return
         else:
-            raise SyntacticError(lastToken.location[0], customMessage=f'{lastToken.name} is not a valid operand for expression')
+            raise SyntacticError(self.curr_token_full.location[0], customMessage=f'{self.curr_token_full.name} is not a valid operand for expression')
     
     def Term_(self):
         if any([self.match('*'), self.match('/'), self.match('%')]):
             self.consume()
             self.F()
-            self.Term_
+            self.Term_()
         elif any([
             self.match('=='),
             self.match('!='),
@@ -253,7 +334,7 @@ class Parser():
             ]): 
             self.consume()
             self.F()
-            self.Term_
+            self.Term_()
         # pode gerar vazio
 
     def Expression_(self):
@@ -344,4 +425,5 @@ if __name__ == '__main__':
     print(tokens)
     p = Parser(tokens)
     p.parse()
+    
     

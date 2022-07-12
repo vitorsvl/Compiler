@@ -1,7 +1,6 @@
-int a = 5;
-int b = 4;
-int c = 3;
+int c; 
+ 
+c++;
+float b = 20.0;
+float e;
 
-int d = a*a + b*b + c*c;
-
-print(d)
