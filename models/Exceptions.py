@@ -29,10 +29,15 @@ class UndeclaredIdError(Exception):
         super().__init__(message)
 
 class IncompatibleTypeError(Exception):
-    def __init__(self, t1, t2, line, opr=False) -> None:
+    def __init__(self, t1, t2, line, opr=False, isAtr=False) -> None:
         if not opr:
-            message = f'Cannot perform operation for types {t1} and {t2} [line {line}]'
+            message = f'Cannot perform operation for types {t1} and {t2} [line {line}]' 
         else:
             message = f'Operation {opr} not defined for type {t1}'
 
+        super().__init__(message)
+
+class AtribuitionError(Exception):
+    def __init__(self, val, typev) -> None:
+        message = f'Cannot assign value {val} to variable of type {typev}'
         super().__init__(message)

@@ -1,6 +1,8 @@
-int c; 
- 
-c++;
-float b = 20.0;
-float e;
+float c; 
+int a = 45;
+int b = 17;
+
+c = a + b * 5 + 12.5 - ((3 / a) + 4);
+
+
 

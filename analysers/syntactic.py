@@ -1,6 +1,6 @@
 from typing import List
 from rich.console import Console
-from analysers.semantic import CodeGen, handle_casting
+from analysers.semantic import CodeGen
 
 from models.Token import Token
 from models.Tables import TypeTable, VarTable
@@ -52,14 +52,16 @@ class Parser():
         except IndexError:
             return False
         
-        # print('curr token type:',t.token_type)
-        # print('curr token:',t.name)
         if expected == 'id':
             if t.token_type == 'Identifier':
                 return True
 
-        elif expected == 'num':
-            if t.token_type in ('IntNumber', 'FloatNumber'):
+        elif expected == 'numi':
+            if t.token_type == 'IntNumber':
+                return True
+
+        elif expected == 'numf':
+            if t.token_type == 'FloatNumber':
                 return True
 
         elif expected == 'string': # string = value (literal)  str = type
@@ -83,27 +85,55 @@ class Parser():
         print(f'Token consumed: {self._tokens[0]}')
         return self._tokens.pop(0)
 
+    def evaluate_exp(self, exp: List, line: int):
+        VAR_TABLE.show()
+        for v in VAR_TABLE.table:
+            while v.name in exp:
+                if v.value:
+                    exp[exp.index(v.name)] = v.value # substitui id pelo valor
+                else: # variável sem valor (não inicializada)
+                    WARNING_QUEUE.append(NotInitializedWarning(v.name, line, path))
+                    if v.type == 'str':
+                        exp[exp.index(v.name)] = ''
+                    elif v.type == 'float':
+                        exp[exp.index(v.name)] = 0  
+                    elif v.type == 'int':
+                        exp[exp.index(v.name)] = 0.0
+        # casos possíveis: exp contém valores de apenas um tipo (int, float ou str) ou mistura int e float
+        # print('exp: ',exp)
+        exps = ''.join(exp) # converte exp para string
+        try:
+            val = eval(exps) # calcula o valor da expressão. Se há int e float realiza conversão de alargamento e retorna o valor em float automaticamente
+            return val
+
+        except TypeError as e: # resulta em TypeError quando o operador é inválido para strings (o único aceito é +, que concatena)
+            se = str(e)
+            if '-' in se:
+                op = '-'
+            elif '/' in se:
+                op = '/'
+            elif 'multiply':
+                op = '*'
+            else:
+                op = '%'
+            raise IncompatibleTypeError('str', '', line, opr=op)
+        
 
     def Code(self, inLoop=False, inCond=False):
         while self._tokens:
             if self.match('id'):
-                # print('entrou atr')
                 self.Atribuition()
 
             elif self.curr_token in ['int', 'float', 'str']:
-                # print('entrou dcl')
                 self.Declaration()
 
             elif self.curr_token in ['for', 'while']:
-                # print('entrou rep')
                 self.Repetition()
 
             elif self.curr_token == 'if':
-                # print('entrou cond')
                 self.Condition()
             
             elif self.curr_token == 'print':
-                # print('entrou print')
                 self.Print()
     
             else:
@@ -111,8 +141,7 @@ class Parser():
                     return True # can generate empty when in loop
                 else:
                     raise InvalidSyntaxError(self.curr_token_full)
-                    # print('Error unexpectedd token:', self.curr_token)
-                    # return False
+          
             self.Code(inLoop=inLoop, inCond=inCond)
         return True
     
@@ -192,7 +221,7 @@ class Parser():
             
             if self.match(';'):
                 self.consume()
-                return val
+                return val[0] # retorna apenas o valor, não o tipo
             else:
                 raise MissingTokenError(';', line=lastToken.location[0])
         else:
@@ -223,9 +252,9 @@ class Parser():
         if not v:
             raise UndeclaredIdError(lastToken.name, lastToken.location[0])
         
-        if self.match('='): # atribuições do tipo a = 10
+        if self.match('='): # atribuições do tipo a = <value> ou a = <exp>
             self.consume()
-            val = self.Val()
+            val, typ = self.Val() # retorna valor e tipo
             if not inForLoop: 
                 if self.match(';'):
                     lastToken = self.consume()
@@ -241,33 +270,62 @@ class Parser():
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
-                    raise MissingTokenError(';', line=lastToken.location[0])      
-         
+                    raise MissingTokenError(';', line=lastToken.location[0])
         else:
             raise InvalidSyntaxError(lastToken)
-        # CODE GENERATION
-        CODE_GEN.atribuitionCode(v.name, v.typev, value=val, inc=isInc)
+        # CODE GENERATION #
+        if isInc:
+            CODE_GEN.atribuitionCode(v.name, v.typev, inc=True)
+        elif v.typev == typ: # se o tipo da variável é igual ao tipo do valor atribuido
+            CODE_GEN.atribuitionCode(v.name, v.typev, value=val)
+        elif v.typev != typ: # tipos diferentes
+            # CONVERSÃO IMPLÍCITA
+            if v.typev == 'int':
+                print('coerção float -> int')
+                val = int(val)
+            elif v.typev == 'float':
+                print('coerção int -> float')
+                val = float(val)
+            else: # erro de atribuição
+                raise AtribuitionError(val, v.typev)
+
+            CODE_GEN.atribuitionCode(v.name, v.typev, value=val)
         
 
-    def Val(self):
-        # print('val com token', self.curr_token_full.token_type)
-        if self.match('num') and self.match(';', matchnext=True):
+    def Val(self): # retorna o valor e o tipo
+        isExp = False
+        if self.match('numi') and self.match(';', matchnext=True):
             lt = self.consume()
-            return lt.name
+            return lt.name, 'int'
 
-        if self.match('string') and self.match(';', matchnext=True):
-            # print('entrou match str')
+        elif self.match('numf') and self.match(';', matchnext=True):
             lt = self.consume()
-            return lt.name     
-        self.Expression() 
+            return lt.name, 'float'
 
-    def Expression(self):
+        elif self.match('string') and self.match(';', matchnext=True):
+            lt = self.consume()
+            return lt.name, 'str'
+        else:
+            value, type = self.Expression() # a expressão é evaluada e o valor retornado
+            return value, type
+
+    def Expression(self, exp=None, fromF=False):
+        if not exp: 
+            exp = [] # salva a expressão na forma de lista
         rc.print('Expression', style=MAINCOLOR)
-        self.Term()
-        self.Expression_()
-      
-    def Term(self):
-        t = self.F()
+        self.Term(exp)
+        self.Expression_(exp)
+        # print('exp:' exp)
+        # CODE GENERATION #
+        if not fromF: # se é uma sub-expressão não gera código
+            exp_value = self.evaluate_exp(exp, self.curr_token_full.location[0])
+            print('Valor da expressão: ', exp_value)
+            typee = 'int' if isinstance(exp_value, int) else 'float' if isinstance(exp_value, float) else 'str'
+            print('tipo: ', typee)
+            return exp_value, typee # retorna o valor calculado e o tipo da expressão
+        
+    def Term(self, exp: List) -> bool:
+        t = self.F(exp)
         # Verificar se há variáveis na fila expCache, 
         if t.token_type == 'Identifier':
             varType = VAR_TABLE.getVarType(t.name)
@@ -277,53 +335,48 @@ class Parser():
             elif t.token_type == "FloatNumber":
                 varType = 'float'
             elif t.token_type == "String":
-                varType = 'str' 
-        expCache.append((t.name, varType)) # adiciona o nome(valor) e o tipo da variável lida em F no final do cache da expressão
+                varType = 'str'
+        if t.token_type != 'Separator':  
+            expCache.append((t.name, varType)) # adiciona o nome(valor) e o tipo da variável lida em F no final do cache da expressão
         if len(expCache) >= 2:
             typeCheck = TYPE_TABLE.check(expCache[0][1], expCache[1][1])
             if typeCheck == 1: # OK
                 expCache.pop() 
-            elif typeCheck == 2: # CAST 
-                print('casting')
-                handle_casting(varType, t) # ??????
-                
+            elif typeCheck == 2: # CAST (int - float) -> sempre converte para float
+                pass # casting é feito em evaluate exp   
             else: # == 3 # ERROR
                 raise IncompatibleTypeError(expCache[0][1], expCache[1][1], t.location[0])
-        self.Term_()
+        self.Term_(exp)
+     
 
-    def F(self):
+    def F(self, exp: List):
         
-        if self.match('id'): 
+        if any([self.match('id'), self.match('numi'), self.match('numf'), self.match('string')]):
             lt = self.consume()
-            return lt # F retorna o token da direita para Term ou Term_ (atribuição)
-            
-        elif self.match('num'): 
-            lt = self.consume()
-            return lt
-
-        elif self.match('string'): 
-            lt = self.consume()
+            exp.append(lt.name)
             return lt
 
         elif self.match('('):
-            lastToken = self.consume()
-            self.Expression()
+            lt = self.consume()
+            exp.append(lt.name)
+            self.Expression(exp=exp, fromF=True)
+
             if self.match(')'):
-                lastToken = self.consume()
+                print('chegou no )')
+                lt = self.consume()
+                exp.append(lt.name)
+                return lt
             else:
-                if self.curr_token == ')': 
-                    return
-                else:
-                    raise MissingTokenError(')', line=lastToken.location[0])
-            return
+                raise MissingTokenError(')', line=lt.location[0])
         else:
             raise SyntacticError(self.curr_token_full.location[0], customMessage=f'{self.curr_token_full.name} is not a valid operand for expression')
     
-    def Term_(self):
+    def Term_(self, exp: List):
         if any([self.match('*'), self.match('/'), self.match('%')]):
-            self.consume()
-            self.F()
-            self.Term_()
+            lt = self.consume()
+            exp.append(lt.name)
+            self.F(exp)
+            self.Term_(exp)
         elif any([
             self.match('=='),
             self.match('!='),
@@ -332,16 +385,18 @@ class Parser():
             self.match('>='),
             self.match('<=')
             ]): 
-            self.consume()
-            self.F()
-            self.Term_()
+            lt = self.consume()
+            exp.append(lt.name)
+            self.F(exp)
+            self.Term_(exp)
         # pode gerar vazio
 
-    def Expression_(self):
+    def Expression_(self, exp: List):
         if self.match('+') or self.match('-'):
-            self.consume()
-            self.Term()
-            self.Expression_()
+            lt = self.consume()
+            exp.append(lt.name)
+            self.Term(exp)
+            self.Expression_(exp)
         elif any([
             self.match('=='),
             self.match('!='),
@@ -350,9 +405,10 @@ class Parser():
             self.match('>='),
             self.match('<=')
             ]): 
-            self.consume()
-            self.Term()
-            self.Expression_()
+            lt = self.consume()
+            exp.append(lt.name)
+            self.Term(exp)
+            self.Expression_(exp)
         # pode gerar vazio
     
     def Condition(self):

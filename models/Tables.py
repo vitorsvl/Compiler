@@ -27,6 +27,10 @@ class Var():
     @property
     def name(self) -> str:
         return self._name
+    
+    @property
+    def value(self):
+        return self._value
         
     def __str__(self):
         return f'var {self._name} of type {self._type} at line {self._line} | Value: {self._value}'
@@ -54,17 +58,6 @@ class VarTable():
     
     def getVarIndex(self, var: Var) -> int:
         return self._table.index(var)
-
-    # def updateVar(self, var: Var): # substitui uma variável por outra quando ocorre redeclaração
-    #     print(var)
-    #     for v in self._table:
-
-    #         if var.name == v.name: # encontrando a variável com o mesmo nome
-    #             print('var name ==  v name')
-    #             print(self._table[self.getVarIndex(v)])
-    #             self._table[self.getVarIndex(v)] = var
-    #             break
-                
 
     def addVar(self, vname: str, vtype: str, vline: int, vvalue=None):
         var = Var(vname, vtype, vline, vvalue)

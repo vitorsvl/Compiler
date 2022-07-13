@@ -1,18 +1,7 @@
 from sys import argv
 from typing import List
 
-print(argv[1])
 inputfile = argv[1][7:]
-
-def handle_casting(ftype, token):
-    if ftype == 'float':
-        token.set_name(float(token.name)) # converte valor para float 
-        token.set_type('float')
-
-    elif ftype == 'int':
-        token.set_name(int(token.name)) # converte valor para float 
-        token.set_type('int')
-
 
 # CODE GENERATION #
 filepath = 'outputs/' + inputfile + '.out' # out = compiler output
@@ -107,7 +96,7 @@ class CodeGen():
         self._addToData(l)
         R.free_t()
     
-    def atribuitionCode(self, vid: str, vtype: str, value=None, vid2=None, isExp=False, inc=False):
+    def atribuitionCode(self, vid: str, vtype: str, value=None, inc=False):
         if vtype == 'int':
             t = R.get_t()
             if value: # atribuição do tipo a = 2
@@ -117,19 +106,12 @@ class CodeGen():
                 self._addToText(l1, l2)
                 R.free_t()
 
-            # elif vid2: # atribuição do tipo a = b
-            #     l1 = f'lw {t}, {vid2}'
-            #     l2 = f'sw {t}, {vid}'
-            #     self._addToText(l1, l2)      
-            #     R.free_t()
             elif inc: # atribuição do tipo a++
                 s = R.get_s()
                 l1 = f'lw {s}, {vid}'
                 l2 = f'addi {s}, {s}, 1'
                 l3 = f'sw {s}, {vid}'
                 self._addToText(l1, l2, l3)
-            elif isExp: # atribuição do tipo a = b + 2  
-                pass 
 
         elif vtype == 'float':
             print('entra aqui')
@@ -143,25 +125,9 @@ class CodeGen():
                 self._addToData(d)
                 self._addToText(t1, t2)
                 R.free_f() 
-                
-
-            elif vid2: # atribuição do tipo a = b
-                l1 = f'lwc1 {f}, {vid2}'
-                l2 = f'swc1 {f}, {vid}'
-                # write to .text 
-                self._addToText(l1, l2)
-                R.free_f()
-
-            elif isExp: # atribuição do tipo a = b + 2.5 
-                pass
 
         elif vtype == 'str':
-            pass
-
-    def expressionCode(self, exp: List): 
-        # exp: lista com os elementos da expressão [1, +, 3, *, 6]
-        pass
-        
+            pass        
 
 
 if __name__ == '__main__':
