@@ -1,20 +1,16 @@
-int a;
-int b;
-a = 25;
-b = 'variavel';
-print("%d", a); /*erro nessa linha*/
-ass
-int soma;
-soma = (b + 35) * 9;
-char s = "aaa";
-char ss = s + "bbb";
+int x = 12;
+str s;
+s = x;
 
-if (a) {
-    print("%d", a);
-}
-int i;
-int z;
-for(i=0;i<12;i++) {
-    z = i + 9;
-    print("%d", z);
-}
+/*
+VARIÁVEL NÃO DECLARADA
+y = 21;
+
+TIPOS INCOMPATÍVEIS
+x = 33 + 'dezoito';
+
+OPERAÇÃO NÃO DEFINIDA PARA TIPO
+s = "a" * 3.5;
+
+ATRIBUIÇÃO ENTRE TIPOS INCOMPATÍVEIS
+*/

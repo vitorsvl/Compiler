@@ -38,8 +38,8 @@ class IncompatibleTypeError(Exception):
         super().__init__(message)
 
 class AtribuitionError(Exception):
-    def __init__(self, val, typev) -> None:
-        message = f'Cannot assign value {val} to variable of type {typev}'
+    def __init__(self, val, valType, varType) -> None:
+        message = f'Cannot assign value {val} of type {valType} to variable of type {varType}'
         super().__init__(message)
 
 class ConditionError(Exception):

@@ -34,14 +34,17 @@ class Parser():
         path = path_to_file
         if self._tokens:
             if self.Code() and not WARNING_QUEUE:
-                rc.print('Compiled with no errors', style=SUCCESS)
-                
+                rc.print('Compiled with no errors', style=SUCCESS)  
             else:
                 for w in WARNING_QUEUE:
                     w.show()
-            CODE_GEN.generate()
+            print()
+            VAR_TABLE.show()
+            rc.print('\nGenerated code:\n', style=SUCCESS)
+            outpath = CODE_GEN.generate()
+            rc.print(f'Output generated in file: {outpath}', style=SUCCESS + ' not b i')
         else:
-            print('Nothing to compile')
+            rc.print('Nothing to compile', style=SUCCESS)
 
     def match(self, expected, matchnext=False) -> bool:
         try:
@@ -86,22 +89,22 @@ class Parser():
         return self._tokens.pop(0)
 
     def evaluate_exp(self, exp: List, line: int): 
-        print('exp: ', exp) 
-        VAR_TABLE.show()
+        rc.print('Expression evaluation', style=MAINCOLOR)
+        print('exp: ', exp)
         for v in VAR_TABLE.table:
             while v.name in exp:
                 if v.value:
                     exp[exp.index(v.name)] = str(v.value) # substitui id pelo valor
                 else: # variável sem valor (não inicializada)
                     WARNING_QUEUE.append(NotInitializedWarning(v.name, line, path))
-                    if v.type == 'str':
+                    if v.typev == 'str':
                         exp[exp.index(v.name)] = ''
-                    elif v.type == 'float':
-                        exp[exp.index(v.name)] = 0  
-                    elif v.type == 'int':
-                        exp[exp.index(v.name)] = 0.0
+                    elif v.typev == 'float':
+                        exp[exp.index(v.name)] = '0'  
+                    elif v.typev == 'int':
+                        exp[exp.index(v.name)] = '0.0'
         # casos possíveis: exp contém valores de apenas um tipo (int, float ou str) ou mistura int e float
-        print('exp: ',exp)
+        print('exp after substitution: ',exp)
 
         exps = ''.join(exp) # converte exp para string
         try:
@@ -110,14 +113,14 @@ class Parser():
             if val == True: val = 1
             if val == False: val = 0
             return val 
-        except TypeError as e: # resulta em TypeError quando o operador é inválido para strings (o único aceito é +, que concatena)
+        except TypeError as e: # resulta em TypeError quando o operador é inválido para strings (o único aceito é +, que concatena e * entre str e int)
             se = str(e)
-            if '-' in se:
-                op = '-'
+            if 'multiply' in se:
+                op = '*'
             elif '/' in se:
                 op = '/'
-            elif 'multiply':
-                op = '*'
+            elif '-':
+                op = '-'
             else:
                 op = '%'
             raise IncompatibleTypeError('str', '', line, opr=op)
@@ -199,19 +202,18 @@ class Parser():
 
 
     def Declaration(self):
-        VAR_TABLE.show()
         rc.print('Declaration', style=MAINCOLOR)
+        generate_code = True
         t = self.Type()
         if self.match('id'):
             lastToken = self.consume() 
             v = VAR_TABLE.isDeclared(lastToken.name)
             if v: # variável já declarada, criar warning
                 WARNING_QUEUE.append(RedeclarationWarning(v.name, lastToken.location[0], v.line, path)) # adiciona warning na fila
-                
+                generate_code = False
             val = self.Declaration_()
             # adicionar na tabela se esta não estiver declarada
             if not v:
-                print('declara')
                 VAR_TABLE.addVar(lastToken.name, t, lastToken.location[0], vvalue=val)
                 v = VAR_TABLE.isDeclared(lastToken.name)
             else:
@@ -219,9 +221,8 @@ class Parser():
         else:
             raise SyntacticError(lastToken.location[0], 'Expected <id>')
         # GENERATE CODE #
-        # tenho o tipo (t) tenho o id (v.name) e tenho o valor (val) (quando houver)
-        print('vname ', v.name)
-        CODE_GEN.declarationCode(v.name, t, value=val)
+        if generate_code: # if redeclaração: não gera código
+            CODE_GEN.declarationCode(v.name, t, value=val)
         
 
     def Declaration_(self):
@@ -265,18 +266,21 @@ class Parser():
         if self.match('='): # atribuições do tipo a = <value> ou a = <exp>
             self.consume()
             val, typ = self.Val() # retorna valor e tipo
+            print(val, type(val))
             if not inForLoop: 
                 if self.match(';'):
                     lastToken = self.consume()
                 else:
                     raise MissingTokenError(';', line=lastToken.location[0]) 
-            isInc = False
+            inc, isDec = False, False
             VAR_TABLE.setVarValue(v.name, val)
         elif self.match('++') or self.match('--'): # atribuições do tipo a++
             if v.typev != 'int':
                 raise IncompatibleTypeError(v.typev, '', lastToken.location[0], opr={self.curr_token})
-            isInc = True
             lastToken = self.consume()
+            inc = True
+            isDec = True if lastToken.name == '--' else False
+            
             if not inForLoop: # exigir ; apenas quando não está dentro de um loop for
                 if self.match(';'):
                     self.consume()
@@ -287,8 +291,8 @@ class Parser():
         else:
             raise InvalidSyntaxError(lastToken)
         # CODE GENERATION #
-        if isInc:
-            CODE_GEN.atribuitionCode(v.name, v.typev, inc=True)
+        if inc: # incremento ou decremento
+            CODE_GEN.atribuitionCode(v.name, v.typev, inc=True, isDec=isDec)
         elif v.typev == typ: # se o tipo da variável é igual ao tipo do valor atribuido
             CODE_GEN.atribuitionCode(v.name, v.typev, value=val)
         elif v.typev != typ: # tipos diferentes
@@ -300,7 +304,7 @@ class Parser():
                 print('coerção int -> float')
                 val = float(val)
             else: # erro de atribuição
-                raise AtribuitionError(val, v.typev)
+                raise AtribuitionError(val, typ, v.typev)
 
             CODE_GEN.atribuitionCode(v.name, v.typev, value=val)
         
@@ -308,11 +312,11 @@ class Parser():
     def Val(self): # retorna o valor e o tipo
         if self.match('numi') and self.match(';', matchnext=True):
             lt = self.consume()
-            return lt.name, 'int'
+            return int(lt.name), 'int'
 
         elif self.match('numf') and self.match(';', matchnext=True):
             lt = self.consume()
-            return lt.name, 'float'
+            return float(lt.name), 'float'
 
         elif self.match('string') and self.match(';', matchnext=True):
             lt = self.consume()
@@ -355,9 +359,9 @@ class Parser():
             if typeCheck == 1: # OK
                 expCache.pop() 
             elif typeCheck == 2: # CAST (int - float) -> sempre converte para float
-                pass # casting é feito em evaluate exp   
+                pass # casting é feito em evaluate exp
             else: # == 3 # ERROR
-                raise IncompatibleTypeError(expCache[0][1], expCache[1][1], t.location[0])
+                raise IncompatibleTypeError(expCache[0][1], expCache[1][1], self.curr_token_full.location[0])
         self.Term_(exp)
      
 

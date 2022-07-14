@@ -1,4 +1,6 @@
-float c; 
+/*DECLARAÇÃO COM E SEM VALOR, CONDICIONAL IF-ELSE, EXPRESSÃO E PRINT*/
+
+float c;
 int a = 45;
 int b = 17;
 

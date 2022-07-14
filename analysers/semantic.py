@@ -1,14 +1,9 @@
 from sys import argv
-from typing import List
 
 inputfile = argv[1][7:]
 
 # CODE GENERATION #
 filepath = 'outputs/' + inputfile + '.out' # out = compiler output
-
-# cria o arquivo se não existir ou limpa se existir
-# f = open(filepath, "w");
-# f.close()
 
 # registers
 class Regs():
@@ -56,6 +51,7 @@ class CodeGen():
     def __init__(self) -> None:
         self._code = {'data': [], 'text': []}
         self._labelCount = 1
+        self._labelQueue = list()
         self._floatCount = 1
         self._tab = False
 
@@ -78,8 +74,13 @@ class CodeGen():
     @tab.setter
     def tab(self, b):
         self._tab = b
+    
+    def labelQueueAdd(self):
+        # adiciona o label atual na fila e incrementa o contador de label
+        self._labelQueue.append(self._labelCount)
+        self._labelCount += 1
 
-    def generate(self): # método que escreve no arquivo
+    def generate(self) -> str: # método que escreve no arquivo
         to_write = '.data\n'
         for ld in self._code['data']:
             to_write = to_write + '    ' + ld + '\n'
@@ -88,7 +89,12 @@ class CodeGen():
         for lt in self._code['text']:
             to_write = to_write + '    ' + lt + '\n'
         
-        print(to_write) # botar saída para aquivo de texto
+        print(to_write) 
+        # saída para aquivo de texto
+        with open(filepath, 'w') as f:
+            f.write(to_write)
+        return filepath
+
         
     def _addToData(self, *args):
         for line in args:
@@ -107,13 +113,13 @@ class CodeGen():
             if value: # se o valor é conhecido
                 l = f'{vid}: .word {value}'
             else:
-                l = f'{vid}: .space 4' 
+                l = f'{vid}: .space 4    # int {vid};' 
 
         elif vtype == 'float':
             if value: # se o valor é conhecido
                 l = f'{vid}: .float {value}'
             else:
-                l = f'{vid}: .space 4' # float size = 4bytes
+                l = f'{vid}: .space 4    # float {vid};' # float size = 4bytes
 
         elif vtype == 'str': 
             if value: # se o valor é conhecido
@@ -124,7 +130,7 @@ class CodeGen():
         self._addToData(l)
         
     
-    def atribuitionCode(self, vid: str, vtype: str, value=None, inc=False):
+    def atribuitionCode(self, vid: str, vtype: str, value=None, inc=False, isDec=False):
         if vtype == 'int':
             t = R.get_t()
             if value: # atribuição do tipo a = 2
@@ -134,10 +140,11 @@ class CodeGen():
                 self._addToText(self._tab, l1, l2)
                 
 
-            elif inc: # atribuição do tipo a++
+            elif inc: # atribuição do tipo a++ ou a--
                 s = R.get_s()
+                op = 'subi' if isDec else 'addi'
                 l1 = f'lw {s}, {vid}'
-                l2 = f'addi {s}, {s}, 1'
+                l2 = f'{op} {s}, {s}, 1'
                 l3 = f'sw {s}, {vid}'
                 self._addToText(self._tab, l1, l2, l3)
 
@@ -169,7 +176,6 @@ class CodeGen():
         self._addToText(self._tab, t1, t2, t3)
 
     def conditionCode(self, expVal=None, expType=None, inIf=False, inElse=False):
-        print('condition code')
         print(expType)
         if inIf:
             if expType == 'int':
@@ -177,6 +183,7 @@ class CodeGen():
                 t = R.get_t()
                 l1 = f'li {t}, {expVal}'
                 l2 = f'beq {t}, $0, elseLabel{self._labelCount}'
+                self.labelQueueAdd() # adiciona label usado na fila 
                 self._addToText(self._tab, l1, l2)
 
             elif expType == 'float':
@@ -187,12 +194,13 @@ class CodeGen():
                 d = f'{fpvar}: .float {expVal}' 
                 t1 = f'lwc1 {f}, {fpvar}'
                 t2 = f'beq {f}, $0, elseLabel{self._labelCount}'
+                self.labelQueueAdd()
                 self._addToData(d)
                 self._addToText(self._tab, t1, t2)
 
         elif inElse:
             self._addToText(self._tab, f'elseLabel {self._labelCount}:')
-            self._labelCount += 1
+            self._labelQueue.pop() # remove o label usado da fila
             self._tab = True
         
     def repetitionCode(self):

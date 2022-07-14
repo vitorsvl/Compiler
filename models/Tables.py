@@ -1,7 +1,10 @@
 # MODELS USED FOR SEMANTIC ANALYSIS
 
 from typing import List
-from unicodedata import name
+from rich.table import Table
+from rich.console import Console
+
+rc = Console()
 
 class Var():
     """
@@ -89,7 +92,16 @@ class VarTable():
 
     def show(self):
         if self._table:
-            print(self._table)
+            table_t = Table(title="Var Table")
+            cols = ['id', 'type', 'line', 'value']
+            for c in cols:
+                table_t.add_column(c)
+
+            for t in self._table:
+                table_t.add_row(t.name, t.typev, str(t.line), str(t.value))
+            
+            rc.print(table_t)
+            
         else: 
             print('Não há variáveis declaradas')
 
@@ -129,7 +141,8 @@ class TypeTable():
         return self._table[type1][type2]
 
     def show(self):
-        print(self._table)
+        rc.print(self._table)
+        
 
 
 if __name__ == '__main__':
