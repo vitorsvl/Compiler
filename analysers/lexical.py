@@ -6,8 +6,8 @@ from os.path import exists
 from rich.table import Table
 from rich.console import Console
 
-from Types import TypesRE
-from Token import Token, Error
+from models.Types import TypesRE
+from models.Token import Token, Error
 
 console = Console()
 

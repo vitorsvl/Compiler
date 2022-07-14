@@ -1,0 +1,16 @@
+/*DECLARAÇÃO COM E SEM VALOR, CONDICIONAL IF-ELSE, EXPRESSÃO E PRINT*/
+
+float c;
+int a = 45;
+int b = 17;
+
+c = a + b * 5 + 12.5 - ((3 / a) + 4);
+
+if (c > 20) {
+    print("c: ", c);
+}
+else {
+    a = 13;
+}
+
+

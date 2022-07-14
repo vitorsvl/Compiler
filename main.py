@@ -19,6 +19,6 @@ except:
 # Análise sintática
 if not errors:
     p = syntactic.Parser(tokens)
-    p.parse()
+    p.parse(path)
 else:
     print("Lexical errors found")

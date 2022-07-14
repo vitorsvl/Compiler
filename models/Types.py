@@ -6,7 +6,7 @@ class TypesRE():
     """
     # lista com os nomes dos tokens ordenados por prioridade
     prior_tokens = [
-        'GTE','LTE','FLOAT','INT','CHAR','IF','ELSE','WHILE', 'FOR','PRINT',
+        'GTE','LTE','FLOAT','INT','STR_T','IF','ELSE','WHILE', 'FOR','PRINT',
         'OP','CP','OSB','CSB','OBR','CBR','SMC','CMM','LB',
         'DIF','GT','LT','EQUAL','ATR','COM', 'CEND',
         'INC','DEC','PLUS','MINUS','MUL','DIV','MOD',
@@ -17,7 +17,7 @@ class TypesRE():
     # Reserved words
     INT   = r'int'
     FLOAT = r'float'
-    CHAR = r'char'
+    STR_T = r'str'
     IF    = r'if'
     ELSE  = r'else'
     WHILE = r'while'
@@ -73,7 +73,7 @@ class TypesRE():
             print('Invalid token')
             return
         else:
-            if token in ['IF', 'ELSE', 'WHILE', 'FOR', 'INT', 'FLOAT','CHAR','PRINT']:
+            if token in ['IF', 'ELSE', 'WHILE', 'FOR', 'INT', 'FLOAT','STR_T','PRINT']:
                 return 'ReservedWord'
             if token == 'ID':
                 return 'Identifier'
@@ -87,8 +87,11 @@ class TypesRE():
                 return 'AtribuitionOp'
             elif token == 'STR': 
                 return 'String'
-            elif token == 'INTEGER' or 'FLOATP':
-                return 'Number'
+        
+            elif token == 'INTEGER':
+                return 'IntNumber'
+            elif token == 'FLOATP':
+                return 'FloatNumber'
             elif token == 'ILL':
                 return 'IllegalChar'
             elif token == 'ILLN':

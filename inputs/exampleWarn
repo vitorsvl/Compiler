@@ -1,0 +1,6 @@
+int a = 90;
+float a = 9.899; /* Redeclaração */
+
+int b;
+
+int c = a + b;
