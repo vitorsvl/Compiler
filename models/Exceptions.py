@@ -41,3 +41,8 @@ class AtribuitionError(Exception):
     def __init__(self, val, typev) -> None:
         message = f'Cannot assign value {val} to variable of type {typev}'
         super().__init__(message)
+
+class ConditionError(Exception):
+    def __init__(self, line: int) -> None:
+        message = f'Strings cannot be evaluated as conditions [line {line}]'
+        super().__init__(message)

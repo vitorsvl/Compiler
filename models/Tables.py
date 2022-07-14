@@ -31,6 +31,10 @@ class Var():
     @property
     def value(self):
         return self._value
+
+    @value.setter
+    def value(self, value):
+        self._value = value
         
     def __str__(self):
         return f'var {self._name} of type {self._type} at line {self._line} | Value: {self._value}'
@@ -56,8 +60,8 @@ class VarTable():
     def table(self) -> List:
         return self._table
     
-    def getVarIndex(self, var: Var) -> int:
-        return self._table.index(var)
+    # def getVarIndex(self, var: Var) -> int:
+    #     return self._table.index(var)
 
     def addVar(self, vname: str, vtype: str, vline: int, vvalue=None):
         var = Var(vname, vtype, vline, vvalue)
@@ -72,6 +76,16 @@ class VarTable():
         for v in self._table:
             if name == v.name:
                 return v.typev
+
+    def getVarValue(self, name):
+        for v in self._table:
+            if name == v.name:
+                return v.value
+    
+    def setVarValue(self, name, value):
+        for v in self._table:
+            if name == v.name:
+                self._table[self._table.index(v)].value = value
 
     def show(self):
         if self._table:

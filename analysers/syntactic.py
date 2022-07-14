@@ -85,12 +85,13 @@ class Parser():
         print(f'Token consumed: {self._tokens[0]}')
         return self._tokens.pop(0)
 
-    def evaluate_exp(self, exp: List, line: int):
+    def evaluate_exp(self, exp: List, line: int): 
+        print('exp: ', exp) 
         VAR_TABLE.show()
         for v in VAR_TABLE.table:
             while v.name in exp:
                 if v.value:
-                    exp[exp.index(v.name)] = v.value # substitui id pelo valor
+                    exp[exp.index(v.name)] = str(v.value) # substitui id pelo valor
                 else: # variável sem valor (não inicializada)
                     WARNING_QUEUE.append(NotInitializedWarning(v.name, line, path))
                     if v.type == 'str':
@@ -100,12 +101,15 @@ class Parser():
                     elif v.type == 'int':
                         exp[exp.index(v.name)] = 0.0
         # casos possíveis: exp contém valores de apenas um tipo (int, float ou str) ou mistura int e float
-        # print('exp: ',exp)
+        print('exp: ',exp)
+
         exps = ''.join(exp) # converte exp para string
         try:
             val = eval(exps) # calcula o valor da expressão. Se há int e float realiza conversão de alargamento e retorna o valor em float automaticamente
-            return val
-
+            # NOTE: val pode ser True ou False caso a expresssão seja logica
+            if val == True: val = 1
+            if val == False: val = 0
+            return val 
         except TypeError as e: # resulta em TypeError quando o operador é inválido para strings (o único aceito é +, que concatena)
             se = str(e)
             if '-' in se:
@@ -127,11 +131,11 @@ class Parser():
             elif self.curr_token in ['int', 'float', 'str']:
                 self.Declaration()
 
-            elif self.curr_token in ['for', 'while']:
-                self.Repetition()
-
             elif self.curr_token == 'if':
                 self.Condition()
+
+            elif self.curr_token in ['for', 'while']:
+                self.Repetition()
             
             elif self.curr_token == 'print':
                 self.Print()
@@ -177,16 +181,22 @@ class Parser():
     
     def Print_(self, lt):
         lastToken = lt
+        var = None
         if self.match('string'):
-            lastToken = self.consume()
+            string = self.consume()
             if self.match(','):
                 lastToken = self.consume()
                 if self.match('id'):
-                    self.consume()
+                    var = self.consume()
             else:
                 raise SyntacticError(lastToken.location[0], customMessage="Expected ','")
         else:
             raise SyntacticError(lastToken.location[0], 'print first argument must be string')
+        # CODE GENERATION #
+        if var:
+            string = string.name[1:-1] + str(VAR_TABLE.getVarValue(var.name))
+            CODE_GEN.printCode(string)
+
 
     def Declaration(self):
         VAR_TABLE.show()
@@ -261,6 +271,7 @@ class Parser():
                 else:
                     raise MissingTokenError(';', line=lastToken.location[0]) 
             isInc = False
+            VAR_TABLE.setVarValue(v.name, val)
         elif self.match('++') or self.match('--'): # atribuições do tipo a++
             if v.typev != 'int':
                 raise IncompatibleTypeError(v.typev, '', lastToken.location[0], opr={self.curr_token})
@@ -268,9 +279,11 @@ class Parser():
             lastToken = self.consume()
             if not inForLoop: # exigir ; apenas quando não está dentro de um loop for
                 if self.match(';'):
-                    lastToken = self.consume()
+                    self.consume()
                 else:
                     raise MissingTokenError(';', line=lastToken.location[0])
+            incvalue = v.value+1 if lastToken.name == '++' else v.value-1
+            VAR_TABLE.setVarValue(v.name, incvalue)
         else:
             raise InvalidSyntaxError(lastToken)
         # CODE GENERATION #
@@ -293,7 +306,6 @@ class Parser():
         
 
     def Val(self): # retorna o valor e o tipo
-        isExp = False
         if self.match('numi') and self.match(';', matchnext=True):
             lt = self.consume()
             return lt.name, 'int'
@@ -304,7 +316,7 @@ class Parser():
 
         elif self.match('string') and self.match(';', matchnext=True):
             lt = self.consume()
-            return lt.name, 'str'
+            return lt.name[1:-1], 'str'
         else:
             value, type = self.Expression() # a expressão é evaluada e o valor retornado
             return value, type
@@ -415,10 +427,14 @@ class Parser():
         rc.print('Condition', style=MAINCOLOR)
         lastToken = self.consume()
         if self.match('('):
-            lastToken = self.consume()
-            self.Expression()
+            self.consume()
+            val, typ = self.Expression()
+            if typ == 'str':
+                raise ConditionError(lastToken.location[0])
             if self.match(')'):
                 self.consume()
+                # CODE GENERATION #
+                CODE_GEN.conditionCode(expVal=val, expType=typ, inIf=True)
                 self.Block(inCond=True)
                 self.Condition_()
             else:
@@ -429,7 +445,9 @@ class Parser():
     def Condition_(self):
         if self.match('else'):
             self.consume()
+            CODE_GEN.conditionCode(inElse=True)
             self.Block(inCond=True)
+            CODE_GEN.tab = False
 
     def Repetition(self):
         rc.print('Repetition', style=MAINCOLOR)
